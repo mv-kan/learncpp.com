@@ -9,6 +9,7 @@ int getValue()
 int main ()
 {
     std::cerr << "main() called\n"; 
+    std::printf("something");
     std::cout << getValue();
     return 0;
 }
