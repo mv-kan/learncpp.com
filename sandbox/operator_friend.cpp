@@ -10,16 +10,15 @@ public:
 
     }
     Number operator=(const Number& n) {
-        Number temp{n.val};
         val = n.val;
-        return temp;
+        return *this;
     }
 
     friend Number operator-(Number& obj, Number& obj2) {
         Number temp{obj.val - obj2.val};
         return temp;
     }
-    friend void ShowContent(Number obj);
+    friend void ShowContent(const Number& obj);
     
     friend Number operator-(int n, const Number& obj);
 };
@@ -28,7 +27,7 @@ Number operator- (int n, const Number& obj) {
     return temp;
 }
 
-void ShowContent(Number obj) {
+void ShowContent(const Number& obj) {
     std::cout << obj.val << std::endl; 
 }
 
