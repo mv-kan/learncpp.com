@@ -16,3 +16,7 @@ run_one_yolo $(SRC):
 	echo $(SRC)
 	@g++ ${SRC} -o $(dir ${SRC})/main.exe
 	$(dir ${SRC})/main.exe
+
+run_one_c:
+	gcc ${SRC} -o $(dir ${SRC})/main.exe
+	$(dir ${SRC})/main.exe
