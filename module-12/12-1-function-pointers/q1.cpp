@@ -1,11 +1,14 @@
-
+#include <iostream>
+#include <limits>
+#include <functional>
+// <PROJECT>
 namespace coolinput
 {
-// this is required inlcudes, if you dont have them please include this lines below
-
-// #include <iostream>
-// #include <limits>
-
+// include in namespace is TERRIBLE idea
+// do not repeat
+// QUESTION: why here this is not working
+#include <iostream>
+#include <limits>
     void ignoreLine()
     {
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -65,4 +68,55 @@ namespace coolinput
             }
         }
     }
+}
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int subtract(int a, int b) {
+    return a - b;
+}
+
+int multiply(int a, int b) {
+    return a * b;
+}
+
+int divide(int a, int b) {
+    return a / b;
+}
+
+using ArithmFn = std::function<int(int, int)>;
+
+ArithmFn getArithmFn(char oper) {
+    switch (oper)
+    {
+    case '+':
+        return add;
+        break;
+    case '-':
+        return subtract;
+        break;
+    case '/':
+        return divide;
+        break;
+    case '*':
+        return multiply;
+        break;
+    default:
+        return nullptr;
+        break;
+    }
+}
+
+int main() {
+    int a{coolinput::pleaseEnter<int>("enter int a: ")};
+    int b{coolinput::pleaseEnter<int>("enter int b: ")};
+    char oper{};
+    std::string operators{"+-*/"};
+    while (operators.find(oper) == std::string::npos) {
+        oper = coolinput::pleaseEnter<char>("enter operator (+, -, *, /): ");
+    }
+    std::function arithmFn{getArithmFn(oper)};
+    std::cout << a << oper << b << '=' << arithmFn(a, b) << std::endl;
 }

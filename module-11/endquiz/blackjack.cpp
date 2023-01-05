@@ -3,6 +3,7 @@
 #include <random>
 #include <algorithm>
 #include <vector>
+// <PROJECT>
 namespace coolinput
 {
 // include in namespace is TERRIBLE idea
@@ -396,7 +397,7 @@ int playBlackjackAceStart() {
 
 int main()
 {
-    switch (playBlackjackAceStart())
+    switch (playBlackjack())
     {
     case 1:
         std::cout << "You WON!!!" << std::endl;
