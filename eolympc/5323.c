@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// 5323
+// https://www.eolymp.com/ru/problems/5323
+// https://www.eolymp.com/ru/submissions/12639254
 
 char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
