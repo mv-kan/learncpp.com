@@ -1,0 +1,8 @@
+[ captureClause ] ( parameters ) -> returnType
+{
+    statements;
+}
+
+1. The capture clause can be empty if no captures are needed.
+2. The parameter list can be either empty or omitted if no parameters are required.
+3. The return type is optional, and if omitted, auto will be assumed (thus using type deduction used to determine the return type). While we previously noted that type deduction for function return types should be avoided, in this context, it’s fine to use (because these functions are typically so trivial).

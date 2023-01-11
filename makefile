@@ -1,6 +1,7 @@
 FLAGS =  -std=c++20 -Werror -Wall -Weffc++ -Wextra -Wsign-conversion -pedantic-errors -fdiagnostics-color=always -g 
-
+FLAGS_C = -Werror -Wall -Wextra -Wsign-conversion -pedantic-errors -fdiagnostics-color=always -g 
 SRC_FILES = $(wildcard ${SRC}/*.cpp)
+ARGS=$()
 build:
 	g++ ${FLAGS} ${SRC_FILES} -o ${SRC}/main.exe
 
@@ -18,5 +19,9 @@ run_one_yolo $(SRC):
 	$(dir ${SRC})/main.exe
 
 run_one_c:
-	gcc ${SRC} -o $(dir ${SRC})/main.exe
+	gcc ${FLAGS_C} ${SRC} -o $(dir ${SRC})/main.exe
 	$(dir ${SRC})/main.exe
+
+run_one_args:
+	@g++ ${FLAGS} ${SRC} -o $(dir ${SRC})/main.exe
+	$(dir ${SRC})/main.exe ${ARGS}
