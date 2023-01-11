@@ -1,6 +1,7 @@
 #include <stdio.h> 
-#include <stdlib.h>
-#include <string.h>
+// #include <stdlib.h>
+#include <malloc.h>
+// #include <string.h>
 
 // https://www.eolymp.com/ru/problems/5323
 // https://www.eolymp.com/ru/submissions/12639254
@@ -12,7 +13,14 @@ int digitToDecimal(char digit) {
     char *findChar;
     int index;
 
-    findChar = strchr(digits, digit);
+    for (char* i = digits; *i != '\0'; i++)
+    {
+        if (*i == digit) {
+            findChar = i;
+            break;
+        }
+    }
+    
     index = (int)(findChar - digits);
 
     return index;
@@ -22,12 +30,18 @@ int digitToDecimal(char digit) {
 // must be less than 36 or more or equal 0
 char decimalToDigit(int dec) {
     if (dec < 0 || dec > 36)
-        exit(1);
+        return '?';
     return digits[dec]; 
 }
 
 int convertFrom(char* num, int numericalSystem) {
-    int len = strlen(num);
+    int len = 0;
+    // calc len without strlen
+    for (char* i = num; *i != '\0'; i++)
+    {
+        len++;
+    }
+    
     int result = 0;
     int numericalDigit = 1;
     for (int i = len - 1; i >= 0; --i)
@@ -46,7 +60,7 @@ int convertFrom(char* num, int numericalSystem) {
 char* convertTo(int decimal, int numericalSystem) {
     // not good, but good enough
     // tmp is going to have converted number, but reversed
-    char tmp[1000];
+    char tmp[50];
     int resultLen = 0;
 
     for (int n = decimal; n > 0; n /= numericalSystem)
@@ -72,18 +86,19 @@ char* convertTo(int decimal, int numericalSystem) {
 
 int main() {
     int n = 0;
-    char A[1000];
+    char A[50];
     int k = 0;
 
     scanf("%d", &n);
     scanf("%s", A);
     scanf("%d", &k);
+
     // converting numbers
     int AInDecimal = convertFrom(A, n);
     char* result = convertTo(AInDecimal, k);
 
     // printing result
-    printf("%s", result);
+    printf("%s\n", result);
 
     // free result, yes this comment was really helpful I know.
     free(result);
