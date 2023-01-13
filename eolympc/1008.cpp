@@ -12,7 +12,9 @@ devide by 2^8 (one byte) and you get decimal for second byte
 столбик
 
 */
-
+namespace huge {
+    
+}
 #define MAX_CHARS_INPUT 1000
 #define BYTE_SIZE 2000 // this is huge long t size
 #define HUGE_T_SIZE BYTE_SIZE
