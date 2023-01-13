@@ -12,9 +12,6 @@ devide by 2^8 (one byte) and you get decimal for second byte
 столбик
 
 */
-namespace huge {
-    
-}
 #define MAX_CHARS_INPUT 1000
 #define BYTE_SIZE 2000 // this is huge long t size
 #define HUGE_T_SIZE BYTE_SIZE
@@ -22,6 +19,11 @@ namespace huge {
 #define BYTE_T_MAX 256
 #define BYTE_T_MAX_VALUE 255
 #define DEBUG 1
+
+namespace huge {
+    
+}
+
 
 typedef unsigned char byte_t;
 
@@ -104,7 +106,7 @@ void huge_t_add_assign(huge_t *const a, const huge_t b)
     {
         // sum cannot be bigger than 255 + 255
         int sum = a->bytes[i] + b.bytes[i] + carry;
-        if (sum > BYTE_T_MAX)
+        if (sum >= BYTE_T_MAX)
         {
             // max value we can put into this byte
             a->bytes[i] = sum % BYTE_T_MAX;
@@ -172,7 +174,7 @@ huge_t huge_t_multiply(const huge_t a, const huge_t b)
             // sum cannot be bigger than 255 * 255
             int sum = a.bytes[j] * b.bytes[i] + carry;
 
-            if (sum > BYTE_T_MAX)
+            if (sum >= BYTE_T_MAX)
             {
                 // max value we can put into this byte
                 result.bytes[j] += sum % BYTE_T_MAX;
