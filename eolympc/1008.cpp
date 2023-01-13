@@ -111,8 +111,39 @@ void huge_long_t_add_assign(huge_long_t *const a, const huge_long_t b)
     }
 }
 
+huge_long_t huge_long_t_add(const huge_long_t a, const huge_long_t b) {
+     if (a.size != b.size)
+    {
+        printf("a.size != b.size");
+        exit(1);
+    }
+    huge_long_t result = huge_long_t_make_zero(a.size);
+    int carry = 0;
+    for (size_t i = 0; i < a.size; i++)
+    {
+        // sum cannot be bigger than 255 + 255
+        int sum = a.bytes[i] + b.bytes[i] + carry;
+        if (sum > BYTE_T_MAX)
+        {
+            // max value we can put into this byte
+            result.bytes[i] = sum % BYTE_T_MAX;
+            // save to carry
+            carry = sum / BYTE_T_MAX;
+        }
+        else
+        {
+            result.bytes[i] = sum;
+            // flush carry because we have place to put values
+            carry = 0;
+        }
+    }
+    return result;
+}
+
 huge_long_t huge_long_t_multiply(const huge_long_t a, const huge_long_t b)
 {
+    // This is messed up, the moment it worked I forgot implementation
+    // so please don't touch it, because nobody knows how it works
     if (a.size != b.size)
     {
         printf("a.size != b.size");
@@ -195,33 +226,36 @@ void printBytesReverse(const byte_t *const num, const size_t size, char sep = '\
 
 int main()
 {
+    char sep = '\0';
     huge_long_t num = huge_long_t_from_int(123321);
     huge_long_t num2 = huge_long_t_from_int(123321);
+    huge_long_t result = huge_long_t_add(num, num2);
 
-    huge_long_t_add_assign(&num, num2);
-
-    printf("%d\n", huge_long_t_is_zero(num));
-    printf("after addition num: \n");
-    printBytesReverse(num.bytes, num.size, ' ');
+    printf("num: \n");
+    printBytesReverse(num.bytes, num.size, sep);
     printf("num2: \n");
-    printBytesReverse(num2.bytes, num2.size, ' ');
+    printBytesReverse(num2.bytes, num2.size, sep);
+    printf("result add: \n");
+    printBytesReverse(result.bytes, result.size, sep);
     // flush
     huge_long_t_delete(&num);
     huge_long_t_delete(&num2);
+    huge_long_t_delete(&result);
 
     num = huge_long_t_from_int(321);
     num2 = huge_long_t_from_int(123);
+    result = huge_long_t_multiply(num, num2);
 
-    huge_long_t result = huge_long_t_multiply(num, num2);
-
-    printf("multiply result: \n");
-    printBytesReverse(result.bytes, result.size, ' ');
+    
     printf("num: \n");
-    printBytesReverse(num.bytes, num.size, ' ');
+    printBytesReverse(num.bytes, num.size, sep);
     printf("num2: \n");
-    printBytesReverse(num2.bytes, num2.size, ' ');
+    printBytesReverse(num2.bytes, num2.size, sep);
+    printf("result multiply: \n");  
+    printBytesReverse(result.bytes, result.size, sep);
 
     huge_long_t_delete(&num);
     huge_long_t_delete(&num2);
+    huge_long_t_delete(&result);
     return 0;
 }
