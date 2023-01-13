@@ -13,13 +13,11 @@ devide by 2^8 (one byte) and you get decimal for second byte
 
 #define MAX_CHARS 10000
 #define MAX_CHARS_INPUT 1001
-#define BYTE_SIZE 2000 // this is huge long t size
-#define HUGE_LONG_T_SIZE BYTE_SIZE
+#define BYTE_SIZE 2000
 #define BYTE_MAX 256
 
 typedef unsigned char byte;
-// has size of HUGE_LONG_T_SIZE
-typedef byte* huge_long_t; 
+typedef unsigned long long ull;
 
 char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -64,7 +62,7 @@ int getLastByte(byte *num)
 byte *toBytes(char *num, int numericalSystem)
 {
     // byte* bytenum = new byte[BYTE_SIZE];// cpp
-    byte *bytenum = (byte *)malloc(BYTE_SIZE * sizeof(byte)); // c
+    byte *bytenum = (byte*)malloc(BYTE_SIZE * sizeof(byte)); // c
     int iBytenum = 0;
 
     int len = strlen(num);
@@ -77,24 +75,10 @@ byte *toBytes(char *num, int numericalSystem)
         int decimal = digitToDecimal(digit);
 
         // multiply numerical digit on numerical system to get value in decimal
-        ull addToResult = (ull)(numericalDigit * (ull)decimal);
-        if (result + addToResult < 0)
-        {
-            while (result > BYTE_MAX || (i - 1 < 0 && result > 0))
-            {
-                // we put the value to byte
-                bytenum[iBytenum] = result % BYTE_MAX;
-                // increment iBytenum to set it to empty byte in @bytenum
-                iBytenum++;
-                // devide result
-                result /= BYTE_MAX;
-                // and reset numerical digit
-                numericalDigit = 1;
-            }
-        }
-        result += addToResult;
+        result += (ull)(numericalDigit * (ull)decimal);
         numericalDigit *= (ull)numericalSystem;
-
+        
+        
         // if result is bigger than BYTE_MAX (2^8)
         // dump all result 256 chunks into @bytenum
         // OR
@@ -102,7 +86,7 @@ byte *toBytes(char *num, int numericalSystem)
         // BUG!!! if number is very big like 10000000000000000000000000000000
         // with zeros this will completely broke, because result cannot hold that value
         // we just hope that we will not encounter more consequent zeros than unsigned long long
-        while ((i - 1 < 0 && result > 0))
+        while (result > BYTE_MAX || (i - 1 < 0 && result > 0))
         {
             // we put the value to byte
             bytenum[iBytenum] = result % BYTE_MAX;
@@ -113,6 +97,7 @@ byte *toBytes(char *num, int numericalSystem)
             // and reset numerical digit
             numericalDigit = 1;
         }
+        
     }
     return bytenum;
 }
@@ -125,32 +110,13 @@ char *convertTo(byte *num, int numericalSystem)
     int tmpLen = 0;
     int size = getLastByte(num) + 1;
     ull sumOfBytes = 0;
-    ull numericalDigit = 1;
     for (int i = 0; i < size; i++)
     {
-        ull addToSum = num[i] * numericalDigit;
-        // this is in case of overflow
-        if (sumOfBytes + addToSum < 0)
-        {
-            // if sumOfBytes bigger than numericalSystem
-            while (sumOfBytes > (ull)numericalSystem)
-            {
-                // calc remain, and convert remain to char digit
-                int remain = sumOfBytes % (ull)numericalSystem;
-                char digit = digits[remain];
-
-                // append char digit to the end of result string
-                tmp[tmpLen] = digit;
-                tmpLen++;
-
-                // divide sumOfBytes because we used for remains it
-                sumOfBytes /= (ull)numericalSystem;
-            }
-        }
-        sumOfBytes += addToSum;
-        numericalDigit *= 10;
+        sumOfBytes += num[i];
+        // if sumOfBytes bigger than numericalSystem
+        // OR
         // if it is last iteration and sumOfBytes bigger than zero (some stuff to save)
-        while ((i + 1 == size && sumOfBytes > 0))
+        while (sumOfBytes > (ull)numericalSystem || (i + 1 == size && sumOfBytes > 0))
         {
             // calc remain, and convert remain to char digit
             int remain = sumOfBytes % (ull)numericalSystem;
@@ -160,13 +126,13 @@ char *convertTo(byte *num, int numericalSystem)
             tmp[tmpLen] = digit;
             tmpLen++;
 
-            // divide sumOfBytes because we used for remains it
+            // divide sumOfBytes because we used for remains it 
             sumOfBytes /= (ull)numericalSystem;
         }
     }
 
     // reverse result string
-    char *result = (char *)malloc((size_t)(tmpLen + 1)); // + 1 for \0 character
+    char *result = (char*)malloc((size_t)(tmpLen + 1)); // + 1 for \0 character
     for (int i = 0; i < tmpLen; i++)
     {
         result[i] = tmp[tmpLen - i - 1]; // - 1 because result len is not index it is size of @tmp
@@ -175,32 +141,11 @@ char *convertTo(byte *num, int numericalSystem)
     return result;
 }
 
-void printByte(byte b)
-{
-    for (int i = 0; i < 8; i++)
-    {
-        printf("%d", !!((b << i) & 0x80));
-    }
-}
-
-void printBytes(byte *num)
-{
-    int size = getLastByte(num) + 1;
+void printBytes(byte* num) {
+    int size = getLastByte(num)+ 1;
     for (int i = 0; i < size; i++)
     {
-        printByte(num[i]);
-        printf("\t");
-    }
-    printf("\n");
-}
-
-void printBytesReverse(byte *num)
-{
-    int size = getLastByte(num) + 1;
-    for (int i = size - 1; i >= 0; --i)
-    {
-        printByte(num[i]);
-        // printf("\t");
+        printf("%d ", num[i]);
     }
     printf("\n");
 }
@@ -209,17 +154,15 @@ int main()
 {
     int m = 0;
     int k = 0;
-    // char n[MAX_CHARS_INPUT];
+    char n[MAX_CHARS_INPUT];
 
-    // scanf("%d %d", &m, &k);
-    // scanf("%s", n);
-    m = 10;
-    k = 10;
-    char n[] = "52282046404974150";
+    scanf("%d %d", &m, &k);
+    scanf("%s", n);
+
     // convert input number to bytes representation
-    byte *num = toBytes(n, m);
-    printBytesReverse(num);
-    char *result = convertTo(num, k);
+    byte* num = toBytes(n, m);
+    printBytes(num);
+    char* result = convertTo(num, k);
 
     printf("%s\n", result);
 
