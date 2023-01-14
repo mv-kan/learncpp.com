@@ -12,7 +12,7 @@ devide by 2^8 (one byte) and you get decimal for second byte
 */
 // HUGE
 #define BYTE_T_MAX 256
-// #define DEBUG 0
+#define DEBUG 0
 
 typedef unsigned char byte_t;
 
@@ -37,6 +37,7 @@ void printBytes(const byte_t *const num, const size_t size, const char sep = ' '
 // least significant endian
 struct huge_t
 {
+    // capacity
     size_t size = 0;
     byte_t *bytes = nullptr;
 };
@@ -278,8 +279,6 @@ void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
     }
     else
     {
-        huge_t_delete(ptr);
-
         *ptr = huge_t_make_zero(a.size);
     }
 
@@ -304,7 +303,7 @@ void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
     }
 }
 
-void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
+void huge_t_multiply_slow(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     // This is messed up, the moment it worked I forgot implementation
     // so please don't touch it, because nobody knows how it works
@@ -379,6 +378,131 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     }
 }
 
+// actually it is byte shift right, because huge_t is little endian
+// ps byte shift to right is like multiplying num on 2^8
+void huge_t_byte_shift_left(huge_t *const ptr)
+{
+    byte_t prev = ptr->bytes[0];
+    ptr->bytes[0] = 0;
+    for (size_t i = 1; i < ptr->size; i++)
+    {
+        byte_t tmp;
+        tmp = ptr->bytes[i];
+        ptr->bytes[i] = prev;
+        prev = tmp;
+    }
+}
+
+size_t huge_t_get_last_byte_index(huge_t a)
+{
+    for (size_t i = 0; i < a.size; ++i)
+    {
+        if (a.bytes[(a.size-1) - i] != 0)
+            return i;
+    }
+    return 0;
+}
+
+// create new huge_t and assign it to ptr if ptr is null or ptr->size != value.size
+// if ptr->size == value.size then just flush ptr
+// think and delete this atrocity
+void huge_t_ptr_to_size(huge_t * ptr, const huge_t value)
+{
+    if (ptr)
+    {
+        // not good size
+        if (ptr->size != value.size)
+        {
+            huge_t_delete(ptr);
+
+            *ptr = huge_t_make_zero(value.size);
+        }
+        else
+        {
+            memset(ptr->bytes, 0, ptr->size);
+        }
+    }
+    else
+    {
+        ptr = malloc(sizeof(huge_t));
+        *ptr = huge_t_make_zero(value.size);
+    }
+}
+
+void huge_t_split_at(huge_t *const ptr, huge_t *const ptr2, const huge_t value, size_t at)
+{
+    // allocate at + 1 bytes for ptr, when you would want to optimize it
+    huge_t_ptr_to_size(ptr, value);
+    huge_t_ptr_to_size(ptr2, value);
+
+    for (size_t i = 0; i < at; i++)
+    {
+        ptr->bytes[i] = value.bytes[i];
+    }
+    for (size_t i = at; i < value.size; i++)
+    {
+        ptr2->bytes[i] = value.bytes[i];
+    }
+}
+
+// karatsuba algorithm
+void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
+{
+    // https://en.wikipedia.org/wiki/Karatsuba_algorithm#Example
+    // this is completely unoptimized
+    huge_t_ptr_to_size(ptr, a);
+
+    size_t last_byte_a = huge_t_get_last_byte_index(a);
+    size_t last_byte_b = huge_t_get_last_byte_index(b);
+    if (last_byte_a == 0 && last_byte_b == 0) {
+        huge_t_set(ptr, a.bytes[0] * b.bytes[0]);
+        return;
+    }
+
+    // calc center of a or b
+    size_t m = last_byte_a > last_byte_b ? last_byte_a : last_byte_b;
+
+    // Split the digit sequences in the middle.
+    huge_t *high1 = NULL, *low1 = NULL, *high2 = NULL, *low2 = NULL;
+
+    huge_t_split_at(low1, high1, a, m);
+    huge_t_split_at(low2, high2, b, m);
+
+    // calculate size (get last valid byte) of a and b
+    huge_t *z0 = NULL, *z1 = NULL, *z2 = NULL;
+
+    // find z0
+    huge_t_multiply(z0, *low1, *low2);
+    // find z1
+    huge_t *sum1 = NULL, *sum2 = NULL;
+    huge_t_add(sum1, *low1, *high1);
+    huge_t_add(sum2, *low2, *high2);
+    huge_t_multiply(z1, *sum1, *sum2);
+    // find z2
+    huge_t_multiply(z2, *high1, *high2);
+
+    // z2 * 2^16, that's why I make shift two times
+    huge_t_byte_shift_left(z2);
+    huge_t_byte_shift_left(z2);
+
+    // (z1 - z2 - z0) * 2^8
+    huge_t_subtract_assign(z1, *z2);
+    huge_t_subtract_assign(z1, *z0);
+    huge_t_byte_shift_left(z1);
+
+    // calculate result
+    huge_t_add_assign(ptr, *z2);
+    huge_t_add_assign(ptr, *z1);
+    huge_t_add_assign(ptr, *z0);
+
+    // delete all used huge_t variables
+    huge_t_delete(z0);
+    huge_t_delete(z1);
+    huge_t_delete(z2);
+    huge_t_delete(sum1);
+    huge_t_delete(sum2);
+}
+
 void huge_t_subtract(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     if (a.size != b.size)
@@ -419,8 +543,6 @@ void huge_t_divide(huge_t *const ptr, const huge_t a, const huge_t b)
 
         *ptr = huge_t_make_zero(a.size);
     }
-
-
 }
 
 void huge_t_print(const huge_t num, char sep = ' ')
@@ -751,10 +873,47 @@ void test_huge_t_subtract_assign()
     free(test_values);
 }
 
+void test_huge_t_byte_shift_left()
+{
+    huge_t num = huge_t_from_int(238);
+    huge_t true_result = huge_t_from_int(60928); // 60928 is 238 * 256
+    huge_t_byte_shift_left(&num);
+
+    if (memcmp(num.bytes, true_result.bytes, sizeof(int)) != 0)
+    {
+        printf("test_huge_t_byte_shift_left: FAILED!!!\n");
+    }
+    else
+    {
+        printf("test_huge_t_byte_shift_left: OK\n");
+    }
+
+    // flush
+    huge_t_delete(&num);
+    huge_t_delete(&true_result);
+}
+
+void test_huge_t_get_last_byte_index() {
+    huge_t num = huge_t_from_int(300);
+    size_t true_result = 1;
+    size_t last_byte = huge_t_get_last_byte_index(num);
+
+    if (last_byte == true_result)
+    {
+        printf("test_huge_t_byte_shift_left: FAILED!!!\n");
+    }
+    else
+    {
+        printf("test_huge_t_byte_shift_left: OK\n");
+    }
+
+    // flush
+    huge_t_delete(&num);
+}
 // END HUGE
 // start input code
 
-#define MAX_CHAR_INPUT 1001
+#define MAX_CHAR_INPUT 1000
 #define HUGE_SIZE 2000
 char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -815,10 +974,10 @@ huge_t parse_str(char *str, int num_system)
         huge_t_set(&digit_to_dec, (size_t)digitToDecimal(digit));
 
         // multiply numerical digit on numerical system to get value in decimal
-        huge_t_multiply(&tmp, num_digit, digit_to_dec);
+        huge_t_add(&tmp, num_digit, digit_to_dec);
         huge_t_add_assign(&result, tmp);
 
-        huge_t_multiply_assign(&num_digit, num_sys);
+        huge_t_add_assign(&num_digit, num_sys);
     }
     huge_t_delete(&num_digit);
     huge_t_delete(&digit_to_dec);
@@ -829,6 +988,7 @@ huge_t parse_str(char *str, int num_system)
 
 int main()
 {
+#if !defined(DEBUG)
     int m = 0;
     int k = 0;
     char A[MAX_CHAR_INPUT + 1];
@@ -843,10 +1003,14 @@ int main()
     // converting numbers
 
     huge_t_print(num);
-    
+#endif // MACRO
+
 #ifdef DEBUG
     srand(0);
-
+    test_huge_t_get_last_byte_index();
+    printf("\n");
+    test_huge_t_byte_shift_left();
+    printf("\n");
     test_huge_t_add();
     printf("\n");
     test_huge_t_multiply();
