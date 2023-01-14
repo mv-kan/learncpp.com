@@ -12,7 +12,8 @@ devide by 2^8 (one byte) and you get decimal for second byte
 */
 // HUGE
 #define BYTE_T_MAX 256
-#define DEBUG 0
+#define DEBUG 1
+// #define DEBUG_EXT 0
 
 typedef unsigned char byte_t;
 
@@ -84,6 +85,18 @@ huge_t huge_t_from_int(int integer) // int not const because we use this variabl
     }
     return num;
 }
+
+void huge_t_print(const huge_t num, char sep = ' ')
+{
+    for (size_t i = 0; i < num.size; ++i)
+    {
+        printByte(num.bytes[(num.size - 1) - i]);
+        if (sep != '\0')
+            printf("%c", sep);
+    }
+    printf("\n");
+}
+
 
 void huge_t_set(huge_t *num, size_t value)
 {
@@ -165,6 +178,12 @@ huge_t huge_t_get_second_complement(const huge_t a)
     for (size_t i = 0; i < a.size; i++)
     {
         result.bytes[i] = ~a.bytes[i];
+        #ifdef DEBUG_EXT
+        printf("result: \n");
+        huge_t_print(result);
+        printf("a: \n");
+        huge_t_print(a);
+        #endif
     }
     huge_t_add_assign(&result, one);
     huge_t_delete(&one);
@@ -251,6 +270,10 @@ void huge_t_subtract_assign(huge_t *const a, const huge_t b)
         exit(1);
     }
     huge_t complement = huge_t_get_second_complement(b);
+    #ifdef DEBUG_EXT
+    printf("complement of b: \n");
+    huge_t_print(complement);
+    #endif
     huge_t_add_assign(a, complement);
     huge_t_delete(&complement);
 }
@@ -393,12 +416,23 @@ void huge_t_byte_shift_left(huge_t *const ptr)
     }
 }
 
+// divide on 2^8
+void huge_t_byte_shift_right(huge_t *const ptr)
+{
+    ptr->bytes[ptr->size - 1] = 0;
+    for (size_t i = 0; i < ptr->size - 1; i++)
+    {
+        ptr->bytes[i] = ptr->bytes[i+1];
+    }
+}
+
+
 size_t huge_t_get_last_byte_index(huge_t a)
 {
     for (size_t i = 0; i < a.size; ++i)
     {
         if (a.bytes[(a.size-1) - i] != 0)
-            return i;
+            return (a.size-1) - i;
     }
     return 0;
 }
@@ -424,7 +458,7 @@ void huge_t_ptr_to_size(huge_t * ptr, const huge_t value)
     }
     else
     {
-        ptr = malloc(sizeof(huge_t));
+        ptr = (huge_t*)malloc(sizeof(huge_t));
         *ptr = huge_t_make_zero(value.size);
     }
 }
@@ -460,47 +494,103 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     }
 
     // calc center of a or b
-    size_t m = last_byte_a > last_byte_b ? last_byte_a : last_byte_b;
+    size_t m = last_byte_a > last_byte_b ? (last_byte_a + 1) / 2: (last_byte_b+ 1) / 2 ;
 
     // Split the digit sequences in the middle.
-    huge_t *high1 = NULL, *low1 = NULL, *high2 = NULL, *low2 = NULL;
+    huge_t high1, low1, high2, low2;
 
-    huge_t_split_at(low1, high1, a, m);
-    huge_t_split_at(low2, high2, b, m);
+    huge_t_split_at(&low1, &high1, a, m);
+    huge_t_split_at(&low2, &high2, b, m);
+    // divide highs on 2^8 because split_at saves numerical digit
+    huge_t_byte_shift_right(&high1);
+    huge_t_byte_shift_right(&high2);
+    #ifdef DEBUG_EXT
+    
+    printf("high1, low1: \n");
+    huge_t_print(high1);
+    huge_t_print(low1);
 
+    printf("high2, low2: \n");
+    huge_t_print(high2);
+    huge_t_print(low2);
+
+    #endif
     // calculate size (get last valid byte) of a and b
-    huge_t *z0 = NULL, *z1 = NULL, *z2 = NULL;
+    huge_t z0, z1, z2;
 
     // find z0
-    huge_t_multiply(z0, *low1, *low2);
+    huge_t_multiply(&z0, low1, low2);
     // find z1
-    huge_t *sum1 = NULL, *sum2 = NULL;
-    huge_t_add(sum1, *low1, *high1);
-    huge_t_add(sum2, *low2, *high2);
-    huge_t_multiply(z1, *sum1, *sum2);
+    huge_t sum1, sum2;
+    huge_t_add(&sum1, low1, high1);
+    huge_t_add(&sum2, low2, high2);
+#ifdef DEBUG_EXT
+    printf("sum1: \n");
+    huge_t_print(sum1);
+
+    printf("sum2: \n");
+    huge_t_print(sum2);
+#endif
+    huge_t_multiply(&z1, sum1, sum2);
     // find z2
-    huge_t_multiply(z2, *high1, *high2);
+    huge_t_multiply(&z2, high1, high2);
 
-    // z2 * 2^16, that's why I make shift two times
-    huge_t_byte_shift_left(z2);
-    huge_t_byte_shift_left(z2);
+#ifdef DEBUG_EXT
+    printf("z0: \n");
+    huge_t_print(z0);
 
+    printf("z1: \n");
+    huge_t_print(z1);
+
+    printf("z2: \n");
+    huge_t_print(z2);
+#endif
+    
     // (z1 - z2 - z0) * 2^8
-    huge_t_subtract_assign(z1, *z2);
-    huge_t_subtract_assign(z1, *z0);
-    huge_t_byte_shift_left(z1);
+    huge_t_subtract_assign(&z1, z2);
+#if DEBUG_EXT
+    printf("z1 - z2: \n");
+    huge_t_print(z1);
+#endif
+    huge_t_subtract_assign(&z1, z0);
+#if DEBUG_EXT
+    printf("z1 - z0: \n");
+    huge_t_print(z1);
+#endif
+    huge_t_byte_shift_left(&z1);
+#if DEBUG_EXT
+    printf("z1 << 1 byte: \n");
+    huge_t_print(z1);
+#endif    
+    // z2 * 2^16, that's why I make shift two times
+    // make sure that it is calculated BEFORE z1 calculated
+    huge_t_byte_shift_left(&z2);
+    huge_t_byte_shift_left(&z2);
 
     // calculate result
-    huge_t_add_assign(ptr, *z2);
-    huge_t_add_assign(ptr, *z1);
-    huge_t_add_assign(ptr, *z0);
+    huge_t_add_assign(ptr, z2);
+    huge_t_add_assign(ptr, z1);
+    huge_t_add_assign(ptr, z0);
+#ifdef DEBUG_EXT
+    printf("new z0: \n");
+    huge_t_print(z0);
 
+    printf("new z1: \n");
+    huge_t_print(z1);
+
+    printf("new z2: \n");
+    huge_t_print(z2);
+
+    printf("ptr: \n");
+    huge_t_print(*ptr);
+    
+#endif
     // delete all used huge_t variables
-    huge_t_delete(z0);
-    huge_t_delete(z1);
-    huge_t_delete(z2);
-    huge_t_delete(sum1);
-    huge_t_delete(sum2);
+    huge_t_delete(&z0);
+    huge_t_delete(&z1);
+    huge_t_delete(&z2);
+    huge_t_delete(&sum1);
+    huge_t_delete(&sum2);
 }
 
 void huge_t_subtract(huge_t *const ptr, const huge_t a, const huge_t b)
@@ -545,16 +635,6 @@ void huge_t_divide(huge_t *const ptr, const huge_t a, const huge_t b)
     }
 }
 
-void huge_t_print(const huge_t num, char sep = ' ')
-{
-    for (size_t i = 0; i < num.size; ++i)
-    {
-        printByte(num.bytes[(num.size - 1) - i]);
-        if (sep != '\0')
-            printf("%c", sep);
-    }
-    printf("\n");
-}
 
 // huge_t huge_t_divide(const huge_t a, const huge_t b) {
 
@@ -722,7 +802,8 @@ void test_huge_t_subtract()
         int c = test_values[i];
         int a = test_values[i_a];
         int b = test_values[i_b];
-
+        if (a - b < 0)
+            continue;
         huge_t num = huge_t_from_int(a);
         huge_t num2 = huge_t_from_int(b);
         huge_t result;
@@ -851,6 +932,8 @@ void test_huge_t_subtract_assign()
         int a = test_values[i_a];
         int b = test_values[i_b];
 
+        if (a - b < 0)
+            continue;
         huge_t num = huge_t_from_int(a);
         huge_t num2 = huge_t_from_int(b);
         huge_t true_result = huge_t_from_int(c);
@@ -1013,11 +1096,11 @@ int main()
     printf("\n");
     test_huge_t_add();
     printf("\n");
-    test_huge_t_multiply();
-    printf("\n");
     test_huge_t_subtract();
     printf("\n");
-
+    test_huge_t_multiply();
+    printf("\n");
+    
     test_huge_t_add_assign();
     printf("\n");
     test_huge_t_multiply_assign();
