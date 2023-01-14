@@ -1,5 +1,5 @@
 FLAGS =  -std=c++20 -Werror -Wall -Weffc++ -Wextra -Wsign-conversion -pedantic-errors -fdiagnostics-color=always -g 
-FLAGS_C = -Werror -Wall -Wextra -Wsign-conversion -pedantic-errors -fdiagnostics-color=always -g 
+FLAGS_C = -std=c17 -Werror -Wall -Wextra -Wsign-conversion -pedantic-errors -fdiagnostics-color=always -g 
 SRC_FILES = $(wildcard ${SRC}/*.cpp)
 ARGS=$()
 build:

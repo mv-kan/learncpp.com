@@ -9,12 +9,10 @@ module by 2^8 (one byte) and you get decimal for first byte
 
 devide by 2^8 (one byte) and you get decimal for second byte
 
-столбик
-
 */
 // HUGE
 #define BYTE_T_MAX 256
-#define DEBUG 1
+// #define DEBUG 0
 
 typedef unsigned char byte_t;
 
@@ -25,7 +23,8 @@ void printByte(byte_t b)
         printf("%d", !!((b << i) & 0x80));
     }
 }
-void printBytes(const byte_t*const num, const size_t size, const char sep=' ') {
+void printBytes(const byte_t *const num, const size_t size, const char sep = ' ')
+{
     for (size_t i = 0; i < size; i++)
     {
         printByte(num[i]);
@@ -38,8 +37,8 @@ void printBytes(const byte_t*const num, const size_t size, const char sep=' ') {
 // least significant endian
 struct huge_t
 {
-    size_t size;
-    byte_t *bytes;
+    size_t size = 0;
+    byte_t *bytes = nullptr;
 };
 
 huge_t huge_t_make_zero(const size_t size)
@@ -85,10 +84,11 @@ huge_t huge_t_from_int(int integer) // int not const because we use this variabl
     return num;
 }
 
-void huge_t_set(huge_t* num, const size_t value) {
+void huge_t_set(huge_t *num, size_t value)
+{
     int ibytes = 0;
-    memset(num->bytes, 0, num.size);
-    while (integer > 0)
+    memset(num->bytes, 0, num->size);
+    while (value > 0)
     {
         // we put the value to byte
         num->bytes[ibytes] = value % BYTE_T_MAX;
@@ -212,9 +212,9 @@ void huge_t_multiply_assign(huge_t *const a, const huge_t b)
             if (sum >= BYTE_T_MAX)
             {
                 // max value we can put into this byte
-                
+
                 // if existing result.bytes[i] + sum is bigger than BYTE_T_MAX we get overflow and wrong answer
-                // to fix this we just add to @carry (result.bytes[i] + sum) / BYTE_T_MAX 
+                // to fix this we just add to @carry (result.bytes[i] + sum) / BYTE_T_MAX
                 // with this addition if there is overflow something will be added
                 // if no overflow then the expression is zero
                 // PS carry has to be calculated before result because we change result
@@ -233,7 +233,7 @@ void huge_t_multiply_assign(huge_t *const a, const huge_t b)
                 // pre result is calculated result in case of overflow of char
                 int pre_result = (result.bytes[result_index] + (sum % BYTE_T_MAX));
                 carry = pre_result / BYTE_T_MAX;
-                
+
                 result.bytes[result_index] = pre_result;
             }
         }
@@ -254,14 +254,35 @@ void huge_t_subtract_assign(huge_t *const a, const huge_t b)
     huge_t_delete(&complement);
 }
 
-huge_t huge_t_add(const huge_t a, const huge_t b)
+void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     if (a.size != b.size)
     {
         printf("a.size != b.size");
         exit(1);
     }
-    huge_t result = huge_t_make_zero(a.size);
+    // if nullptr
+    if (ptr)
+    {
+        // not good size
+        if (ptr->size != a.size)
+        {
+            huge_t_delete(ptr);
+
+            *ptr = huge_t_make_zero(a.size);
+        }
+        else
+        {
+            memset(ptr->bytes, 0, ptr->size);
+        }
+    }
+    else
+    {
+        huge_t_delete(ptr);
+
+        *ptr = huge_t_make_zero(a.size);
+    }
+
     int carry = 0;
     for (size_t i = 0; i < a.size; i++)
     {
@@ -270,21 +291,20 @@ huge_t huge_t_add(const huge_t a, const huge_t b)
         if (sum >= BYTE_T_MAX)
         {
             // max value we can put into this byte
-            result.bytes[i] = sum % BYTE_T_MAX;
+            ptr->bytes[i] = sum % BYTE_T_MAX;
             // save to carry
             carry = sum / BYTE_T_MAX;
         }
         else
         {
-            result.bytes[i] = sum;
+            ptr->bytes[i] = sum;
             // flush carry because we have place to put values
             carry = 0;
         }
     }
-    return result;
 }
 
-huge_t huge_t_multiply(const huge_t a, const huge_t b)
+void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     // This is messed up, the moment it worked I forgot implementation
     // so please don't touch it, because nobody knows how it works
@@ -293,10 +313,29 @@ huge_t huge_t_multiply(const huge_t a, const huge_t b)
         printf("a.size != b.size");
         exit(1);
     }
-    // we save multiplication into result var
-    huge_t result = huge_t_make_zero(a.size);
+    // if nullptr
+    if (ptr)
+    {
+        // not good size
+        if (ptr->size != a.size)
+        {
+            huge_t_delete(ptr);
 
-    // this is O(n^2) but I don't care
+            *ptr = huge_t_make_zero(a.size);
+        }
+        else
+        {
+            memset(ptr->bytes, 0, ptr->size);
+        }
+    }
+    else
+    {
+        huge_t_delete(ptr);
+
+        *ptr = huge_t_make_zero(a.size);
+    }
+
+    // this is O(n^2) but I do care
     // distributive property used here
     for (size_t i = 0; i < b.size; i++)
     {
@@ -312,18 +351,18 @@ huge_t huge_t_multiply(const huge_t a, const huge_t b)
             if (sum >= BYTE_T_MAX)
             {
                 // max value we can put into this byte
-                
+
                 // if existing result.bytes[i] + sum is bigger than BYTE_T_MAX we get overflow and wrong answer
-                // to fix this we just add to @carry (result.bytes[i] + sum) / BYTE_T_MAX 
+                // to fix this we just add to @carry (result.bytes[i] + sum) / BYTE_T_MAX
                 // with this addition if there is overflow something will be added
                 // if no overflow then the expression is zero
                 // PS carry has to be calculated before result because we change result
 
                 // pre result is calculated result in case of overflow of char
-                int pre_result = (result.bytes[result_index] + (sum % BYTE_T_MAX));
+                int pre_result = (ptr->bytes[result_index] + (sum % BYTE_T_MAX));
                 carry = sum / BYTE_T_MAX + (pre_result / BYTE_T_MAX);
 
-                result.bytes[result_index] = pre_result;
+                ptr->bytes[result_index] = pre_result;
             }
             else
             {
@@ -331,18 +370,16 @@ huge_t huge_t_multiply(const huge_t a, const huge_t b)
                 // for explanation look for comment in if statement
 
                 // pre result is calculated result in case of overflow of char
-                int pre_result = (result.bytes[result_index] + (sum % BYTE_T_MAX));
+                int pre_result = (ptr->bytes[result_index] + (sum % BYTE_T_MAX));
                 carry = pre_result / BYTE_T_MAX;
-                
-                result.bytes[result_index] = pre_result;
+
+                ptr->bytes[result_index] = pre_result;
             }
         }
     }
-    return result;
 }
 
-// subtraction by addition
-huge_t huge_t_subtract(const huge_t a, const huge_t b)
+void huge_t_subtract(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     if (a.size != b.size)
     {
@@ -350,9 +387,40 @@ huge_t huge_t_subtract(const huge_t a, const huge_t b)
         exit(1);
     }
     huge_t complement = huge_t_get_second_complement(b);
-    huge_t result = huge_t_add(a, complement);
+    huge_t_add(ptr, a, complement);
     huge_t_delete(&complement);
-    return result;
+}
+
+void huge_t_divide(huge_t *const ptr, const huge_t a, const huge_t b)
+{
+    if (a.size != b.size)
+    {
+        printf("a.size != b.size");
+        exit(1);
+    }
+    // if nullptr
+    if (ptr)
+    {
+        // not good size
+        if (ptr->size != a.size)
+        {
+            huge_t_delete(ptr);
+
+            *ptr = huge_t_make_zero(a.size);
+        }
+        else
+        {
+            memset(ptr->bytes, 0, ptr->size);
+        }
+    }
+    else
+    {
+        huge_t_delete(ptr);
+
+        *ptr = huge_t_make_zero(a.size);
+    }
+
+
 }
 
 void huge_t_print(const huge_t num, char sep = ' ')
@@ -374,7 +442,7 @@ void huge_t_print(const huge_t num, char sep = ' ')
 
 // }
 #include <time.h>
-#define TEST_VALUES_SIZE 100
+#define TEST_VALUES_SIZE 10
 // returns array with size * 3 size
 // from 0 to size there are first operands (a)
 // from size to size * 2 there are second operands (b)
@@ -449,7 +517,8 @@ void test_huge_t_add()
 
         huge_t num = huge_t_from_int(a);
         huge_t num2 = huge_t_from_int(b);
-        huge_t result = huge_t_add(num, num2);
+        huge_t result;
+        huge_t_add(&result, num, num2);
         huge_t true_result = huge_t_from_int(c);
 
         if (memcmp(result.bytes, true_result.bytes, sizeof(int)) != 0)
@@ -491,7 +560,8 @@ void test_huge_t_multiply()
 
         huge_t num = huge_t_from_int(a);
         huge_t num2 = huge_t_from_int(b);
-        huge_t result = huge_t_multiply(num, num2);
+        huge_t result;
+        huge_t_multiply(&result, num, num2);
         huge_t true_result = huge_t_from_int(c);
 
         if (memcmp(result.bytes, true_result.bytes, sizeof(int)) != 0)
@@ -533,7 +603,8 @@ void test_huge_t_subtract()
 
         huge_t num = huge_t_from_int(a);
         huge_t num2 = huge_t_from_int(b);
-        huge_t result = huge_t_subtract(num, num2);
+        huge_t result;
+        huge_t_subtract(&result, num, num2);
         huge_t true_result = huge_t_from_int(c);
 
         if (memcmp(result.bytes, true_result.bytes, sizeof(int)) != 0)
@@ -683,8 +754,8 @@ void test_huge_t_subtract_assign()
 // END HUGE
 // start input code
 
-#define MAX_CHAR_INPUT 1000
-#define HUGE_SIZE 5000
+#define MAX_CHAR_INPUT 1001
+#define HUGE_SIZE 2000
 char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 // converts char digit to decimal number
@@ -716,6 +787,10 @@ char decimalToDigit(int dec)
     return digits[dec];
 }
 
+// char *to_str(huge_t num, int num_system)
+// {
+// }
+
 huge_t parse_str(char *str, int num_system)
 {
     int len = 0;
@@ -728,24 +803,47 @@ huge_t parse_str(char *str, int num_system)
     huge_t result = huge_t_make_zero(HUGE_SIZE);
     huge_t num_digit = huge_t_init(1, HUGE_SIZE); // numerical digit
     huge_t digit_to_dec = huge_t_make_zero(HUGE_SIZE);
+    huge_t num_sys = huge_t_init((size_t)num_system, HUGE_SIZE);
+    // tmp variable, less malloc and free operations
+    huge_t tmp = huge_t_make_zero(HUGE_SIZE);
 
     for (int i = len - 1; i >= 0; --i)
     {
         // convert num in numericalSystem to decimal
-        char digit = num[i];
-        // here I am just being lazy 
-        huge_t_set(&digit_to_dec, digitToDecimal(digit));
-        
+        char digit = str[i];
+        // here I am just being lazy
+        huge_t_set(&digit_to_dec, (size_t)digitToDecimal(digit));
+
         // multiply numerical digit on numerical system to get value in decimal
-        huge_t& tmp = huge_t_multiply()
-        result += num_digit * digit_to_dec;
-        num_digit *= num_system;
+        huge_t_multiply(&tmp, num_digit, digit_to_dec);
+        huge_t_add_assign(&result, tmp);
+
+        huge_t_multiply_assign(&num_digit, num_sys);
     }
+    huge_t_delete(&num_digit);
+    huge_t_delete(&digit_to_dec);
+    huge_t_delete(&num_sys);
+    huge_t_delete(&tmp);
     return result;
 }
 
 int main()
 {
+    int m = 0;
+    int k = 0;
+    char A[MAX_CHAR_INPUT + 1];
+
+    scanf("%d %d", &m, &k);
+    scanf("%s", A);
+
+    huge_t num = parse_str(A, m);
+    // char *str = to_str(num, k);
+
+    // printf("%s", str);
+    // converting numbers
+
+    huge_t_print(num);
+    
 #ifdef DEBUG
     srand(0);
 
