@@ -12,7 +12,7 @@ devide by 2^8 (one byte) and you get decimal for second byte
 */
 // HUGE
 #define BYTE_T_MAX 256
-#define DEBUG 1
+// #define DEBUG 1
 // #define DEBUG_EXT 0
 
 typedef unsigned char byte_t;
@@ -202,64 +202,6 @@ void huge_t_convert_second_complement(huge_t *const a)
     }
     huge_t_add_assign(a, one);
     huge_t_delete(&one);
-}
-
-void huge_t_multiply_assign(huge_t *const a, const huge_t b)
-{
-    // This is messed up, the moment it worked I forgot implementation
-    // so please don't touch it, because nobody knows how it works
-    if (a->size != b.size)
-    {
-        printf("a.size != b.size");
-        exit(1);
-    }
-    // we save multiplication into result var
-    huge_t result = huge_t_make_zero(a->size);
-
-    // this is O(n^2) but I don't care
-    // distributive property used here
-    for (size_t i = 0; i < b.size; i++)
-    {
-        int carry = 0;
-        // inner multiplication (multiply one "b" byte on all "a" bytes )
-        for (size_t j = 0; j < a->size; j++)
-        {
-            // sum cannot be bigger than 255 * 255
-            int sum = a->bytes[j] * b.bytes[i] + carry;
-            // @result_index is index of results bytes
-            //
-            int result_index = j + i;
-            if (sum >= BYTE_T_MAX)
-            {
-                // max value we can put into this byte
-
-                // if existing result.bytes[i] + sum is bigger than BYTE_T_MAX we get overflow and wrong answer
-                // to fix this we just add to @carry (result.bytes[i] + sum) / BYTE_T_MAX
-                // with this addition if there is overflow something will be added
-                // if no overflow then the expression is zero
-                // PS carry has to be calculated before result because we change result
-
-                // pre result is calculated result in case of overflow of char
-                int pre_result = (result.bytes[result_index] + (sum % BYTE_T_MAX));
-                carry = sum / BYTE_T_MAX + (pre_result / BYTE_T_MAX);
-
-                result.bytes[result_index] = pre_result;
-            }
-            else
-            {
-                // flush carry because we have place to put values
-                // for explanation look for comment in if statement
-
-                // pre result is calculated result in case of overflow of char
-                int pre_result = (result.bytes[result_index] + (sum % BYTE_T_MAX));
-                carry = pre_result / BYTE_T_MAX;
-
-                result.bytes[result_index] = pre_result;
-            }
-        }
-    }
-    huge_t_delete(a);
-    a->bytes = result.bytes;
 }
 
 void huge_t_subtract_assign(huge_t *const a, const huge_t b)
@@ -591,6 +533,22 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     huge_t_delete(&z2);
     huge_t_delete(&sum1);
     huge_t_delete(&sum2);
+}
+
+void huge_t_multiply_assign(huge_t *const a, const huge_t b)
+{
+    // This is messed up, the moment it worked I forgot implementation
+    // so please don't touch it, because nobody knows how it works
+    if (a->size != b.size)
+    {
+        printf("a.size != b.size");
+        exit(1);
+    }
+    // we save multiplication into result var
+    huge_t result = huge_t_make_zero(a->size);
+    huge_t_multiply(&result, *a, b);
+    huge_t_delete(a);
+    a->bytes = result.bytes;
 }
 
 void huge_t_subtract(huge_t *const ptr, const huge_t a, const huge_t b)
@@ -1057,10 +1015,10 @@ huge_t parse_str(char *str, int num_system)
         huge_t_set(&digit_to_dec, (size_t)digitToDecimal(digit));
 
         // multiply numerical digit on numerical system to get value in decimal
-        huge_t_add(&tmp, num_digit, digit_to_dec);
+        huge_t_multiply(&tmp, num_digit, digit_to_dec);
         huge_t_add_assign(&result, tmp);
 
-        huge_t_add_assign(&num_digit, num_sys);
+        huge_t_multiply_assign(&num_digit, num_sys);
     }
     huge_t_delete(&num_digit);
     huge_t_delete(&digit_to_dec);
