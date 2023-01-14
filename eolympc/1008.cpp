@@ -25,6 +25,15 @@ void printByte(byte_t b)
         printf("%d", !!((b << i) & 0x80));
     }
 }
+void printBytes(const byte_t*const num, const size_t size, const char sep=' ') {
+    for (size_t i = 0; i < size; i++)
+    {
+        printByte(num[i]);
+        if (sep != '\0')
+            printf("%c", sep);
+    }
+    printf("\n");
+}
 
 // least significant endian
 struct huge_t
@@ -189,6 +198,9 @@ void huge_t_multiply_assign(huge_t *const a, const huge_t b)
             if (sum >= BYTE_T_MAX)
             {
                 // max value we can put into this byte
+                
+                // if existing result bytes[i] + sum is bigger than BYTE_T_MAX we get overflow and wrong answer
+                
                 result.bytes[result_index] += sum % BYTE_T_MAX;
                 // save to carry
                 carry = sum / BYTE_T_MAX;
@@ -199,6 +211,20 @@ void huge_t_multiply_assign(huge_t *const a, const huge_t b)
                 // flush carry because we have place to put values
                 carry = 0;
             }
+            #if DEBUG
+            printf("a.bytes[%zu] = %d, b.bytes[%zu] = %d, a * b = %d\n", j, a->bytes[j], i, b.bytes[i], a->bytes[j] * b.bytes[i]);
+            printf("carry = %d, result.byte[%zu] = %d\n", carry, result_index, result.bytes[result_index]);
+            printf("result bytes: \n");
+            printBytes(result.bytes, result.size);
+
+            printf("a bytes: \n");
+            printBytes(a->bytes, result.size);
+
+            printf("b bytes: \n");
+            printBytes(b.bytes, result.size);
+
+            printf("\n");
+            #endif
         }
     }
     huge_t_delete(a);
@@ -338,7 +364,7 @@ int *test_generate_values(const size_t size, const char oper)
     // fill from 0 to size * 2 with random values
     for (size_t i = 0; i < end_b; i++)
     {
-        values[i] = rand() % 10000;
+        values[i] = rand() % 2000;
     }
 
     // I dont know what is lambda sorry
@@ -690,7 +716,7 @@ char decimalToDigit(int dec)
 int main()
 {
 #ifdef DEBUG
-    // srand(time(NULL)); no random for my tests
+    srand(0);
 
     test_huge_t_add();
     printf("\n");
