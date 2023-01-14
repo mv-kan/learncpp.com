@@ -570,6 +570,8 @@ void test_huge_t_multiply_assign()
         if (memcmp(num.bytes, true_result.bytes, sizeof(int)) != 0)
         {
             printf("test_huge_t_multiply_assign: test no %zu FAILED!!!, a=%d, b=%d, true_result=%d\n", i_a, a, b, c);
+            huge_t_print(num);
+            huge_t_print(true_result);
         }
         else
         {
