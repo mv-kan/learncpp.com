@@ -85,6 +85,20 @@ huge_t huge_t_from_int(int integer) // int not const because we use this variabl
     return num;
 }
 
+void huge_t_set(huge_t* num, const size_t value) {
+    int ibytes = 0;
+    memset(num->bytes, 0, num.size);
+    while (integer > 0)
+    {
+        // we put the value to byte
+        num->bytes[ibytes] = value % BYTE_T_MAX;
+        // increment iBytenum to set it to empty byte in @bytenum
+        ibytes++;
+        // devide result
+        value /= BYTE_T_MAX;
+    }
+}
+
 void huge_t_delete(const huge_t *const num)
 {
     if (num->bytes)
@@ -222,20 +236,6 @@ void huge_t_multiply_assign(huge_t *const a, const huge_t b)
                 
                 result.bytes[result_index] = pre_result;
             }
-            // #if DEBUG
-            // printf("a.bytes[%zu] = %d, b.bytes[%zu] = %d, a * b = %d\n", j, a->bytes[j], i, b.bytes[i], a->bytes[j] * b.bytes[i]);
-            // printf("carry = %d, result.byte[%d] = %d\n", carry, result_index, result.bytes[result_index]);
-            // printf("result bytes: \n");
-            // printBytes(result.bytes, result.size);
-
-            // printf("a bytes: \n");
-            // printBytes(a->bytes, result.size);
-
-            // printf("b bytes: \n");
-            // printBytes(b.bytes, result.size);
-
-            // printf("\n");
-            // #endif
         }
     }
     huge_t_delete(a);
@@ -306,19 +306,35 @@ huge_t huge_t_multiply(const huge_t a, const huge_t b)
         {
             // sum cannot be bigger than 255 * 255
             int sum = a.bytes[j] * b.bytes[i] + carry;
-
+            // @result_index is index of results bytes
+            //
+            int result_index = j + i;
             if (sum >= BYTE_T_MAX)
             {
                 // max value we can put into this byte
-                result.bytes[j] += sum % BYTE_T_MAX;
-                // save to carry
-                carry = sum / BYTE_T_MAX;
+                
+                // if existing result.bytes[i] + sum is bigger than BYTE_T_MAX we get overflow and wrong answer
+                // to fix this we just add to @carry (result.bytes[i] + sum) / BYTE_T_MAX 
+                // with this addition if there is overflow something will be added
+                // if no overflow then the expression is zero
+                // PS carry has to be calculated before result because we change result
+
+                // pre result is calculated result in case of overflow of char
+                int pre_result = (result.bytes[result_index] + (sum % BYTE_T_MAX));
+                carry = sum / BYTE_T_MAX + (pre_result / BYTE_T_MAX);
+
+                result.bytes[result_index] = pre_result;
             }
             else
             {
-                result.bytes[j] += sum;
                 // flush carry because we have place to put values
-                carry = 0;
+                // for explanation look for comment in if statement
+
+                // pre result is calculated result in case of overflow of char
+                int pre_result = (result.bytes[result_index] + (sum % BYTE_T_MAX));
+                carry = pre_result / BYTE_T_MAX;
+                
+                result.bytes[result_index] = pre_result;
             }
         }
     }
@@ -375,7 +391,7 @@ int *test_generate_values(const size_t size, const char oper)
     // fill from 0 to size * 2 with random values
     for (size_t i = 0; i < end_b; i++)
     {
-        values[i] = rand() % 2000;
+        values[i] = rand() % 10000;
     }
 
     // I dont know what is lambda sorry
@@ -700,29 +716,33 @@ char decimalToDigit(int dec)
     return digits[dec];
 }
 
-// huge_t parse_str(char *str, int num_system)
-// {
-//     int len = 0;
-//     // calc len without strlen
-//     for (char *i = str; *i != '\0'; i++)
-//     {
-//         len++;
-//     }
+huge_t parse_str(char *str, int num_system)
+{
+    int len = 0;
+    // calc len without strlen
+    for (char *i = str; *i != '\0'; i++)
+    {
+        len++;
+    }
 
-//     huge_t result = huge_t_make_zero(HUGE_SIZE);
-//     huge_t num_digit = huge_t_init(1, HUGE_SIZE); // numerical digit
-//     for (int i = len - 1; i >= 0; --i)
-//     {
-//         // convert num in numericalSystem to decimal
-//         char digit = num[i];
-//         int decimal = digitToDecimal(digit);
+    huge_t result = huge_t_make_zero(HUGE_SIZE);
+    huge_t num_digit = huge_t_init(1, HUGE_SIZE); // numerical digit
+    huge_t digit_to_dec = huge_t_make_zero(HUGE_SIZE);
 
-//         // multiply numerical digit on numerical system to get value in decimal
-//         result += num_digit * decimal;
-//         num_digit *= num_system;
-//     }
-//     return result;
-// }
+    for (int i = len - 1; i >= 0; --i)
+    {
+        // convert num in numericalSystem to decimal
+        char digit = num[i];
+        // here I am just being lazy 
+        huge_t_set(&digit_to_dec, digitToDecimal(digit));
+        
+        // multiply numerical digit on numerical system to get value in decimal
+        huge_t& tmp = huge_t_multiply()
+        result += num_digit * digit_to_dec;
+        num_digit *= num_system;
+    }
+    return result;
+}
 
 int main()
 {
@@ -744,27 +764,5 @@ int main()
     printf("\n");
 
 #endif
-    return 0;
-    /* addition */
-    huge_t num = huge_t_from_int(123);
-    huge_t num2 = huge_t_from_int(123);
-    huge_t result = huge_t_subtract(num, num2);
-    huge_t complement = huge_t_get_second_complement(result);
-
-    printf("num: \n");
-    huge_t_print(num);
-    printf("num2: \n");
-    huge_t_print(num2);
-    printf("result add: \n");
-    huge_t_print(result);
-    printf("second complement of result: \n");
-    huge_t_print(complement);
-
-    // flush
-    huge_t_delete(&num);
-    huge_t_delete(&num2);
-    huge_t_delete(&result);
-    huge_t_delete(&complement);
-
     return 0;
 }
