@@ -199,32 +199,43 @@ void huge_t_multiply_assign(huge_t *const a, const huge_t b)
             {
                 // max value we can put into this byte
                 
-                // if existing result bytes[i] + sum is bigger than BYTE_T_MAX we get overflow and wrong answer
-                
-                result.bytes[result_index] += sum % BYTE_T_MAX;
-                // save to carry
-                carry = sum / BYTE_T_MAX;
+                // if existing result.bytes[i] + sum is bigger than BYTE_T_MAX we get overflow and wrong answer
+                // to fix this we just add to @carry (result.bytes[i] + sum) / BYTE_T_MAX 
+                // with this addition if there is overflow something will be added
+                // if no overflow then the expression is zero
+                // PS carry has to be calculated before result because we change result
+
+                // pre result is calculated result in case of overflow of char
+                int pre_result = (result.bytes[result_index] + (sum % BYTE_T_MAX));
+                carry = sum / BYTE_T_MAX + (pre_result / BYTE_T_MAX);
+
+                result.bytes[result_index] = pre_result;
             }
             else
             {
-                result.bytes[result_index] += sum;
                 // flush carry because we have place to put values
-                carry = 0;
+                // for explanation look for comment in if statement
+
+                // pre result is calculated result in case of overflow of char
+                int pre_result = (result.bytes[result_index] + (sum % BYTE_T_MAX));
+                carry = pre_result / BYTE_T_MAX;
+                
+                result.bytes[result_index] = pre_result;
             }
-            #if DEBUG
-            printf("a.bytes[%zu] = %d, b.bytes[%zu] = %d, a * b = %d\n", j, a->bytes[j], i, b.bytes[i], a->bytes[j] * b.bytes[i]);
-            printf("carry = %d, result.byte[%zu] = %d\n", carry, result_index, result.bytes[result_index]);
-            printf("result bytes: \n");
-            printBytes(result.bytes, result.size);
+            // #if DEBUG
+            // printf("a.bytes[%zu] = %d, b.bytes[%zu] = %d, a * b = %d\n", j, a->bytes[j], i, b.bytes[i], a->bytes[j] * b.bytes[i]);
+            // printf("carry = %d, result.byte[%d] = %d\n", carry, result_index, result.bytes[result_index]);
+            // printf("result bytes: \n");
+            // printBytes(result.bytes, result.size);
 
-            printf("a bytes: \n");
-            printBytes(a->bytes, result.size);
+            // printf("a bytes: \n");
+            // printBytes(a->bytes, result.size);
 
-            printf("b bytes: \n");
-            printBytes(b.bytes, result.size);
+            // printf("b bytes: \n");
+            // printBytes(b.bytes, result.size);
 
-            printf("\n");
-            #endif
+            // printf("\n");
+            // #endif
         }
     }
     huge_t_delete(a);
@@ -347,7 +358,7 @@ void huge_t_print(const huge_t num, char sep = ' ')
 
 // }
 #include <time.h>
-#define TEST_VALUES_SIZE 10
+#define TEST_VALUES_SIZE 100
 // returns array with size * 3 size
 // from 0 to size there are first operands (a)
 // from size to size * 2 there are second operands (b)
