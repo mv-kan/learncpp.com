@@ -12,8 +12,12 @@ devide by 2^8 (one byte) and you get decimal for second byte
 */
 // HUGE
 #define BYTE_T_MAX 256
-#define DEBUG 0
-#define DEBUG_EXT 0
+#define DEBUG 1
+#define DEBUG_EXT_MULTIPLY 0
+// if DEBUG set HUGE_SIZE to sizeof(int)
+// because multiplying is depends on this value
+// why? it is complicated, better take a look at huge_t_multiply function
+#define HUGE_SIZE sizeof(int)
 
 typedef unsigned char byte_t;
 
@@ -38,7 +42,7 @@ void printBytesReverse(const byte_t *const num, const size_t size, const char se
 {
     for (size_t i = 0; i < size; i++)
     {
-        printByte(num[size - 1 -i]);
+        printByte(num[size - 1 - i]);
         if (sep != '\0')
             printf("%c", sep);
     }
@@ -55,6 +59,8 @@ struct huge_t
 
 huge_t huge_t_make_zero(const size_t size)
 {
+    // static int i = 0;
+    // printf("huge_t_make_zero: %d\n", ++i);
     huge_t num;
     num.bytes = (byte_t *)malloc(size * sizeof(byte_t));
     num.size = size;
@@ -125,7 +131,12 @@ void huge_t_set(huge_t *num, size_t value)
 void huge_t_delete(const huge_t *const num)
 {
     if (num->bytes)
+    {
+        // static int i = 0;
+        // printf("huge_t_delete: %d\n", ++i);
+
         free(num->bytes);
+    }
 }
 
 bool huge_t_is_zero(const huge_t num)
@@ -152,7 +163,7 @@ void huge_t_add_assign(huge_t *const a, const huge_t b)
 {
     if (a->size != b.size)
     {
-        printf("a.size != b.size");
+        printf("huge_t_add_assign: a.size != b.size");
         exit(1);
     }
 
@@ -217,7 +228,7 @@ void huge_t_subtract_assign(huge_t *const a, const huge_t b)
 {
     if (a->size != b.size)
     {
-        printf("a.size != b.size");
+        printf("huge_t_subtract_assign: a.size != b.size\n");
         exit(1);
     }
     huge_t complement = huge_t_get_second_complement(b);
@@ -233,7 +244,7 @@ void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     if (a.size != b.size)
     {
-        printf("a.size != b.size");
+        printf("huge_t_add: a.size != b.size");
         exit(1);
     }
     // if nullptr
@@ -283,7 +294,7 @@ void huge_t_multiply_slow(huge_t *const ptr, const huge_t a, const huge_t b)
     // so please don't touch it, because nobody knows how it works
     if (a.size != b.size)
     {
-        printf("a.size != b.size");
+        printf("huge_t_multiply_slow: a.size != b.size");
         exit(1);
     }
     // if nullptr
@@ -394,22 +405,13 @@ void huge_t_ptr_to_size(huge_t *ptr, const huge_t value)
 {
     if (ptr)
     {
-        // not good size
         if (ptr->size != value.size)
         {
-            huge_t_delete(ptr);
+            printf("huge_t_ptr_to_size: ptr->size != value.size\n");
+            exit(1);
+        }
 
-            *ptr = huge_t_make_zero(value.size);
-        }
-        else
-        {
-            memset(ptr->bytes, 0, ptr->size);
-        }
-    }
-    else
-    {
-        ptr = (huge_t *)malloc(sizeof(huge_t));
-        *ptr = huge_t_make_zero(value.size);
+        memset(ptr->bytes, 0, ptr->size);
     }
 }
 
@@ -433,7 +435,14 @@ void huge_t_split_at(huge_t *const ptr, huge_t *const ptr2, const huge_t value, 
 void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     // https://en.wikipedia.org/wiki/Karatsuba_algorithm#Example
-    // this is completely unoptimized
+#if DEBUG_EXT_MULTIPLY
+    static int i = 0;
+    int funcid = i;
+    i++;
+    printf("fid = %d a, b: \n", funcid);
+    huge_t_print(a);
+    huge_t_print(b);
+#endif
     huge_t_ptr_to_size(ptr, a);
 
     size_t last_byte_a = huge_t_get_last_byte_index(a);
@@ -441,6 +450,11 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     if (last_byte_a == 0 && last_byte_b == 0)
     {
         huge_t_set(ptr, a.bytes[0] * b.bytes[0]);
+
+#if DEBUG_EXT_MULTIPLY
+        printf("fid = %d ptr: \n", funcid);
+        huge_t_print(*ptr);
+#endif
         return;
     }
 
@@ -448,69 +462,77 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     size_t m = last_byte_a > last_byte_b ? (last_byte_a + 1) / 2 : (last_byte_b + 1) / 2;
 
     // Split the digit sequences in the middle.
-    huge_t high1, low1, high2, low2;
+    huge_t high1 = huge_t_make_zero(a.size);
+    huge_t low1 = huge_t_make_zero(a.size); 
+    huge_t high2 = huge_t_make_zero(a.size);
+    huge_t low2 = huge_t_make_zero(a.size);
 
     huge_t_split_at(&low1, &high1, a, m);
     huge_t_split_at(&low2, &high2, b, m);
     // divide highs on 2^8 because split_at saves numerical digit
     huge_t_byte_shift_right(&high1);
     huge_t_byte_shift_right(&high2);
-#if DEBUG_EXT
+#if DEBUG_EXT_MULTIPLY
 
-    printf("high1, low1: \n");
+    printf("fid = %d high1, low1: \n", funcid);
     huge_t_print(high1);
     huge_t_print(low1);
 
-    printf("high2, low2: \n");
+    printf("fid = %d high2, low2: \n", funcid);
     huge_t_print(high2);
     huge_t_print(low2);
 
 #endif
-    // calculate size (get last valid byte) of a and b
-    huge_t z0, z1, z2;
+    // each huge_t_multiply function has to have its own dedicated memory for these variables
+    huge_t z0 = huge_t_make_zero(a.size);
+    huge_t z1 = huge_t_make_zero(a.size);
+    huge_t z2 = huge_t_make_zero(a.size);
 
     // find z0
     huge_t_multiply(&z0, low1, low2);
+
+    huge_t sum1 = huge_t_make_zero(a.size);
+    huge_t sum2 = huge_t_make_zero(a.size);
     // find z1
-    huge_t sum1, sum2;
     huge_t_add(&sum1, low1, high1);
     huge_t_add(&sum2, low2, high2);
-#if DEBUG_EXT
-    printf("sum1: \n");
+#if DEBUG_EXT_MULTIPLY
+    printf("fid = %d sum1: \n", funcid);
     huge_t_print(sum1);
 
-    printf("sum2: \n");
+    printf("fid = %d sum2: \n", funcid);
     huge_t_print(sum2);
 #endif
+
     huge_t_multiply(&z1, sum1, sum2);
     // find z2
     huge_t_multiply(&z2, high1, high2);
 
-#if DEBUG_EXT
-    printf("z0: \n");
+#if DEBUG_EXT_MULTIPLY
+    printf("fid = %d z0: \n", funcid);
     huge_t_print(z0);
 
-    printf("z1: \n");
+    printf("fid = %d z1: \n", funcid);
     huge_t_print(z1);
 
-    printf("z2: \n");
+    printf("fid = %d z2: \n", funcid);
     huge_t_print(z2);
 #endif
 
     // (z1 - z2 - z0) * 2^8
     huge_t_subtract_assign(&z1, z2);
-#if DEBUG_EXT
-    printf("z1 - z2: \n");
+#if DEBUG_EXT_MULTIPLY
+    printf("fid = %d z1 - z2: \n", funcid);
     huge_t_print(z1);
 #endif
     huge_t_subtract_assign(&z1, z0);
-#if DEBUG_EXT
-    printf("z1 - z0: \n");
+#if DEBUG_EXT_MULTIPLY
+    printf("fid = %d z1 - z0: \n", funcid);
     huge_t_print(z1);
 #endif
     huge_t_byte_shift_left(&z1);
-#if DEBUG_EXT
-    printf("z1 << 1 byte: \n");
+#if DEBUG_EXT_MULTIPLY
+    printf("fid = %d z1 << 1 byte: \n", funcid);
     huge_t_print(z1);
 #endif
     // z2 * 2^16, that's why I make shift two times
@@ -522,26 +544,30 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     huge_t_add_assign(ptr, z2);
     huge_t_add_assign(ptr, z1);
     huge_t_add_assign(ptr, z0);
-#if DEBUG_EXT
-    printf("new z0: \n");
+#if DEBUG_EXT_MULTIPLY
+    printf("fid = %d new z0: \n", funcid);
     huge_t_print(z0);
 
-    printf("new z1: \n");
+    printf("fid = %d new z1: \n", funcid);
     huge_t_print(z1);
 
-    printf("new z2: \n");
+    printf("fid = %d new z2: \n", funcid);
     huge_t_print(z2);
 
-    printf("ptr: \n");
+    printf("fid = %d ptr: \n", funcid);
     huge_t_print(*ptr);
 
 #endif
-    // delete all used huge_t variables
+    // delete it
     huge_t_delete(&z0);
     huge_t_delete(&z1);
     huge_t_delete(&z2);
     huge_t_delete(&sum1);
     huge_t_delete(&sum2);
+    huge_t_delete(&high1);
+    huge_t_delete(&high2);
+    huge_t_delete(&low1);
+    huge_t_delete(&low2);
 }
 
 void huge_t_multiply_assign(huge_t *const a, const huge_t b)
@@ -550,7 +576,7 @@ void huge_t_multiply_assign(huge_t *const a, const huge_t b)
     // so please don't touch it, because nobody knows how it works
     if (a->size != b.size)
     {
-        printf("a.size != b.size");
+        printf("huge_t_multiply_assign: a.size != b.size");
         exit(1);
     }
     // we save multiplication into result var
@@ -576,7 +602,7 @@ void huge_t_divide(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     if (a.size != b.size)
     {
-        printf("a.size != b.size");
+        printf("huge_t_divide: a.size != b.size");
         exit(1);
     }
     // if nullptr
@@ -728,13 +754,15 @@ void test_huge_t_multiply()
 
         huge_t num = huge_t_from_int(a);
         huge_t num2 = huge_t_from_int(b);
-        huge_t result;
+        huge_t result = huge_t_from_int(0);
         huge_t_multiply(&result, num, num2);
         huge_t true_result = huge_t_from_int(c);
 
         if (memcmp(result.bytes, true_result.bytes, sizeof(int)) != 0)
         {
             printf("test_huge_t_multiply: test no %zu FAILED!!!, a=%d, b=%d, true_result=%d\n", i_a, a, b, c);
+            huge_t_print(result);
+            huge_t_print(true_result);
         }
         else
         {
@@ -964,7 +992,6 @@ void test_huge_t_get_last_byte_index()
 // start input code
 
 #define MAX_CHAR_INPUT 1000
-#define HUGE_SIZE 2000
 char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 // converts char digit to decimal number
@@ -1055,7 +1082,6 @@ int main()
     // huge_t_print(num);
     printBytesReverse(num.bytes, huge_t_get_last_byte_index(num) + 1);
     huge_t_delete(&num);
-
 
 #endif // MACRO
 
