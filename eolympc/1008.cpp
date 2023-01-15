@@ -178,12 +178,12 @@ huge_t huge_t_get_second_complement(const huge_t a)
     for (size_t i = 0; i < a.size; i++)
     {
         result.bytes[i] = ~a.bytes[i];
-        #ifdef DEBUG_EXT
-        printf("result: \n");
-        huge_t_print(result);
-        printf("a: \n");
-        huge_t_print(a);
-        #endif
+        // #ifdef DEBUG_EXT
+        // printf("result: \n");
+        // huge_t_print(result);
+        // printf("a: \n");
+        // huge_t_print(a);
+        // #endif
     }
     huge_t_add_assign(&result, one);
     huge_t_delete(&one);
@@ -212,10 +212,10 @@ void huge_t_subtract_assign(huge_t *const a, const huge_t b)
         exit(1);
     }
     huge_t complement = huge_t_get_second_complement(b);
-    #ifdef DEBUG_EXT
-    printf("complement of b: \n");
-    huge_t_print(complement);
-    #endif
+    // #ifdef DEBUG_EXT
+    // printf("complement of b: \n");
+    // huge_t_print(complement);
+    // #endif
     huge_t_add_assign(a, complement);
     huge_t_delete(&complement);
 }
@@ -939,7 +939,7 @@ void test_huge_t_get_last_byte_index() {
     size_t true_result = 1;
     size_t last_byte = huge_t_get_last_byte_index(num);
 
-    if (last_byte == true_result)
+    if (last_byte != true_result)
     {
         printf("test_huge_t_byte_shift_left: FAILED!!!\n");
     }
