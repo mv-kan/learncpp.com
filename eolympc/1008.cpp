@@ -12,7 +12,7 @@ devide by 2^8 (one byte) and you get decimal for second byte
 */
 // HUGE
 #define BYTE_T_MAX 256
-#define DEBUG 1
+#define DEBUG 0
 #define DEBUG_EXT 0
 
 typedef unsigned char byte_t;
@@ -1053,7 +1053,7 @@ int main()
     // converting numbers
 
     // huge_t_print(num);
-    printBytesReverse(num.bytes, num.size);
+    printBytesReverse(num.bytes, huge_t_get_last_byte_index(num) + 1);
     huge_t_delete(&num);
 
 
