@@ -10,11 +10,9 @@ module by 2^8 (one byte) and you get decimal for first byte
 devide by 2^8 (one byte) and you get decimal for second byte
 
 */
-#define HUGE_SIZE 2000
-
 // HUGE
 #define BYTE_T_MAX 256
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG_EXT 0
 
 typedef unsigned char byte_t;
@@ -40,12 +38,13 @@ void printBytesReverse(const byte_t *const num, const size_t size, const char se
 {
     for (size_t i = 0; i < size; i++)
     {
-        printByte(num[size - 1 - i]);
+        printByte(num[size - 1 -i]);
         if (sep != '\0')
             printf("%c", sep);
     }
     printf("\n");
 }
+
 // least significant endian
 struct huge_t
 {
@@ -56,8 +55,6 @@ struct huge_t
 
 huge_t huge_t_make_zero(const size_t size)
 {
-    static int i = 0;
-    printf("huge_t_make_zero: no %d\n", ++i);
     huge_t num;
     num.bytes = (byte_t *)malloc(size * sizeof(byte_t));
     num.size = size;
@@ -110,7 +107,6 @@ void huge_t_print(const huge_t num, char sep = ' ')
     printf("\n");
 }
 
-
 void huge_t_set(huge_t *num, size_t value)
 {
     int ibytes = 0;
@@ -128,8 +124,6 @@ void huge_t_set(huge_t *num, size_t value)
 
 void huge_t_delete(const huge_t *const num)
 {
-    static int i = 0;
-    printf("huge_t_delete: no %d\n", ++i);
     if (num->bytes)
         free(num->bytes);
 }
@@ -193,7 +187,7 @@ huge_t huge_t_get_second_complement(const huge_t a)
     for (size_t i = 0; i < a.size; i++)
     {
         result.bytes[i] = ~a.bytes[i];
-        // #ifdef DEBUG_EXT
+        // #if DEBUG_EXT
         // printf("result: \n");
         // huge_t_print(result);
         // printf("a: \n");
@@ -227,34 +221,12 @@ void huge_t_subtract_assign(huge_t *const a, const huge_t b)
         exit(1);
     }
     huge_t complement = huge_t_get_second_complement(b);
-    // #ifdef DEBUG_EXT
+    // #if DEBUG_EXT
     // printf("complement of b: \n");
     // huge_t_print(complement);
     // #endif
     huge_t_add_assign(a, complement);
     huge_t_delete(&complement);
-}
-
-
-// check size and if same sets bytes to zero
-// if ptr->size == value.size then just flush ptr
-// think and delete this atrocity
-void huge_t_ptr_to_size(huge_t * ptr, const huge_t value)
-{
-    if (ptr)
-    {
-        // not good size
-        if (ptr->size != value.size)
-        {
-            huge_t_delete(ptr);
-
-            // *ptr = huge_t_make_zero(value.size); // uncomment
-        }
-        else
-        {
-            memset(ptr->bytes, 0, ptr->size);
-        }
-    } 
 }
 
 void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
@@ -265,7 +237,24 @@ void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
         exit(1);
     }
     // if nullptr
-    huge_t_ptr_to_size(ptr, a);
+    if (ptr)
+    {
+        // not good size
+        if (ptr->size != a.size)
+        {
+            huge_t_delete(ptr);
+
+            *ptr = huge_t_make_zero(a.size);
+        }
+        else
+        {
+            memset(ptr->bytes, 0, ptr->size);
+        }
+    }
+    else
+    {
+        *ptr = huge_t_make_zero(a.size);
+    }
 
     int carry = 0;
     for (size_t i = 0; i < a.size; i++)
@@ -384,21 +373,45 @@ void huge_t_byte_shift_right(huge_t *const ptr)
     ptr->bytes[ptr->size - 1] = 0;
     for (size_t i = 0; i < ptr->size - 1; i++)
     {
-        ptr->bytes[i] = ptr->bytes[i+1];
+        ptr->bytes[i] = ptr->bytes[i + 1];
     }
 }
-
 
 size_t huge_t_get_last_byte_index(huge_t a)
 {
     for (size_t i = 0; i < a.size; ++i)
     {
-        if (a.bytes[(a.size-1) - i] != 0)
-            return (a.size-1) - i;
+        if (a.bytes[(a.size - 1) - i] != 0)
+            return (a.size - 1) - i;
     }
     return 0;
 }
 
+// create new huge_t and assign it to ptr if ptr is null or ptr->size != value.size
+// if ptr->size == value.size then just flush ptr
+// think and delete this atrocity
+void huge_t_ptr_to_size(huge_t *ptr, const huge_t value)
+{
+    if (ptr)
+    {
+        // not good size
+        if (ptr->size != value.size)
+        {
+            huge_t_delete(ptr);
+
+            *ptr = huge_t_make_zero(value.size);
+        }
+        else
+        {
+            memset(ptr->bytes, 0, ptr->size);
+        }
+    }
+    else
+    {
+        ptr = (huge_t *)malloc(sizeof(huge_t));
+        *ptr = huge_t_make_zero(value.size);
+    }
+}
 
 void huge_t_split_at(huge_t *const ptr, huge_t *const ptr2, const huge_t value, size_t at)
 {
@@ -419,47 +432,31 @@ void huge_t_split_at(huge_t *const ptr, huge_t *const ptr2, const huge_t value, 
 // karatsuba algorithm
 void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
 {
-    // this is stupid and hacky, but it just works
-    // to prevent the problem of constantly creating expensive huge_t 
-    // we just going to be using predefined huge_t for our purposes
-    // 1. Is it going to be cleared and when? When program ends, probably 
-    // 2. what if we have something bigger than HUGE_SIZE? tough luck. This is just for one stupid problem on one website, so for this it is not that bad
-    static huge_t arr[] = {
-        huge_t_make_zero(HUGE_SIZE), // high1
-        huge_t_make_zero(HUGE_SIZE), // low1
-        huge_t_make_zero(HUGE_SIZE), // high2
-        huge_t_make_zero(HUGE_SIZE), // low2
-        huge_t_make_zero(HUGE_SIZE), // z0
-        huge_t_make_zero(HUGE_SIZE), // z1
-        huge_t_make_zero(HUGE_SIZE), // z2
-        huge_t_make_zero(HUGE_SIZE), // sum1
-        huge_t_make_zero(HUGE_SIZE), // sum2
-        };
-
     // https://en.wikipedia.org/wiki/Karatsuba_algorithm#Example
     // this is completely unoptimized
     huge_t_ptr_to_size(ptr, a);
 
     size_t last_byte_a = huge_t_get_last_byte_index(a);
     size_t last_byte_b = huge_t_get_last_byte_index(b);
-    if (last_byte_a == 0 && last_byte_b == 0) {
+    if (last_byte_a == 0 && last_byte_b == 0)
+    {
         huge_t_set(ptr, a.bytes[0] * b.bytes[0]);
         return;
     }
 
     // calc center of a or b
-    size_t m = last_byte_a > last_byte_b ? (last_byte_a + 1) / 2: (last_byte_b+ 1) / 2 ;
+    size_t m = last_byte_a > last_byte_b ? (last_byte_a + 1) / 2 : (last_byte_b + 1) / 2;
 
     // Split the digit sequences in the middle.
-    huge_t high1 = arr[0], low1 = arr[1], high2 = arr[2], low2 = arr[3];
+    huge_t high1, low1, high2, low2;
 
     huge_t_split_at(&low1, &high1, a, m);
     huge_t_split_at(&low2, &high2, b, m);
     // divide highs on 2^8 because split_at saves numerical digit
     huge_t_byte_shift_right(&high1);
     huge_t_byte_shift_right(&high2);
-    #if DEBUG_EXT
-    
+#if DEBUG_EXT
+
     printf("high1, low1: \n");
     huge_t_print(high1);
     huge_t_print(low1);
@@ -468,14 +465,14 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     huge_t_print(high2);
     huge_t_print(low2);
 
-    #endif
+#endif
     // calculate size (get last valid byte) of a and b
-    huge_t z0 = arr[4], z1 = arr[5], z2 = arr[6];
+    huge_t z0, z1, z2;
 
     // find z0
     huge_t_multiply(&z0, low1, low2);
     // find z1
-    huge_t sum1 = arr[7], sum2 = arr[8];
+    huge_t sum1, sum2;
     huge_t_add(&sum1, low1, high1);
     huge_t_add(&sum2, low2, high2);
 #if DEBUG_EXT
@@ -499,7 +496,7 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     printf("z2: \n");
     huge_t_print(z2);
 #endif
-    
+
     // (z1 - z2 - z0) * 2^8
     huge_t_subtract_assign(&z1, z2);
 #if DEBUG_EXT
@@ -515,7 +512,7 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
 #if DEBUG_EXT
     printf("z1 << 1 byte: \n");
     huge_t_print(z1);
-#endif    
+#endif
     // z2 * 2^16, that's why I make shift two times
     // make sure that it is calculated BEFORE z1 calculated
     huge_t_byte_shift_left(&z2);
@@ -537,15 +534,14 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
 
     printf("ptr: \n");
     huge_t_print(*ptr);
-    
+
 #endif
     // delete all used huge_t variables
-    // don't need to delete because it is all static vars
-    // huge_t_delete(&z0);
-    // huge_t_delete(&z1);
-    // huge_t_delete(&z2);
-    // huge_t_delete(&sum1);
-    // huge_t_delete(&sum2);
+    huge_t_delete(&z0);
+    huge_t_delete(&z1);
+    huge_t_delete(&z2);
+    huge_t_delete(&sum1);
+    huge_t_delete(&sum2);
 }
 
 void huge_t_multiply_assign(huge_t *const a, const huge_t b)
@@ -605,7 +601,6 @@ void huge_t_divide(huge_t *const ptr, const huge_t a, const huge_t b)
         *ptr = huge_t_make_zero(a.size);
     }
 }
-
 
 // huge_t huge_t_divide(const huge_t a, const huge_t b) {
 
@@ -947,7 +942,8 @@ void test_huge_t_byte_shift_left()
     huge_t_delete(&true_result);
 }
 
-void test_huge_t_get_last_byte_index() {
+void test_huge_t_get_last_byte_index()
+{
     huge_t num = huge_t_from_int(300);
     size_t true_result = 1;
     size_t last_byte = huge_t_get_last_byte_index(num);
@@ -968,6 +964,7 @@ void test_huge_t_get_last_byte_index() {
 // start input code
 
 #define MAX_CHAR_INPUT 1000
+#define HUGE_SIZE 2000
 char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 // converts char digit to decimal number
@@ -1054,9 +1051,12 @@ int main()
 
     // printf("%s", str);
     // converting numbers
-    printBytesReverse(num.bytes, huge_t_get_last_byte_index(num) + 1);
+
     // huge_t_print(num);
+    printBytesReverse(num.bytes, num.size);
     huge_t_delete(&num);
+
+
 #endif // MACRO
 
 #if DEBUG
@@ -1071,7 +1071,7 @@ int main()
     printf("\n");
     test_huge_t_multiply();
     printf("\n");
-    
+
     test_huge_t_add_assign();
     printf("\n");
     test_huge_t_multiply_assign();
