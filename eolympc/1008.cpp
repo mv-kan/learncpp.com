@@ -17,7 +17,7 @@ devide by 2^8 (one byte) and you get decimal for second byte
 // if DEBUG set HUGE_SIZE to sizeof(int)
 // because multiplying is depends on this value
 // why? it is complicated, better take a look at huge_t_multiply function
-#define HUGE_SIZE sizeof(int)
+#define HUGE_SIZE 2000
 
 typedef unsigned char byte_t;
 
@@ -161,11 +161,12 @@ huge_t huge_t_copy(const huge_t num)
 
 void huge_t_add_assign(huge_t *const a, const huge_t b)
 {
-    if (a->size != b.size)
-    {
-        printf("huge_t_add_assign: a.size != b.size");
-        exit(1);
-    }
+    // // huge_t_multiply require ability to add different size huge_t
+    // if (a->size != b.size)
+    // {
+    //     printf("huge_t_add_assign: a.size != b.size");
+    //     exit(1);
+    // }
 
     int carry = 0;
     for (size_t i = 0; i < a->size; i++)
@@ -240,6 +241,115 @@ void huge_t_subtract_assign(huge_t *const a, const huge_t b)
     huge_t_delete(&complement);
 }
 
+#define CACHE_SIZE 1000
+huge_t cache[CACHE_SIZE];
+
+// push ptr into cache
+// returns false if not success
+bool huge_t_cache_push(huge_t *const ptr)
+{
+    return false;
+    if (ptr)
+    {
+        for (size_t i = 0; i < CACHE_SIZE; i++)
+        {
+            if (cache[i].size == 0 && cache[i].bytes == NULL)
+            {
+                memset(ptr->bytes, 0, ptr->size);
+                cache[i].bytes = ptr->bytes;
+                cache[i].size = ptr->size;
+                return true;
+            }
+        }
+        return false;
+    }
+    else
+    {
+        printf("huge_t_cache_push: there shouldn't be huge_t NULL poiners, this is error");
+        exit(1);
+    }
+}
+
+/*
+get from cache already created huge_t with size of @size
+huge_t will be deleted from cache
+@ptr var where to put huge_t from cache
+nullptr in bytes and 0 in size considered as empty in huge_t cache
+@returns true if cache hit, false if cache miss
+*/
+bool huge_t_cache_get(huge_t *const ptr, const size_t size)
+{
+    return false;
+    if (ptr)
+    {
+        for (size_t i = 0; i < CACHE_SIZE; i++)
+        {
+            if (cache[i].size == size)
+            {
+                memset(cache[i].bytes, 0, cache[i].size);
+                ptr->bytes = cache[i].bytes;
+                ptr->size = cache[i].size;
+                cache[i].size = 0;
+                cache[i].bytes = NULL;
+                // cache hit
+                return true;
+            }
+        }
+        // cache miss
+        return false;
+    }
+    else
+    {
+        printf("huge_t_cache_get: there shouldn't be huge_t NULL poiners, this is error");
+        exit(1);
+    }
+}
+
+// quick delete and quick init are tied together
+void huge_t_quick_delete(huge_t *const ptr)
+{
+    if (!huge_t_cache_push(ptr))
+    {
+        huge_t_delete(ptr);
+        return;
+        printf("huge_t_quick_delete: cache is full");
+        exit(1);
+    }
+    else
+    {
+        ptr->bytes = NULL;
+        ptr->size = 0;
+    }
+}
+// quick init is universal function that makes check,
+// creates new, or get from cache unused huge_t
+void huge_t_quick_init(huge_t *const ptr, const size_t size)
+{
+    if (ptr)
+    {
+        if (ptr->size == size)
+        {
+            memset(ptr->bytes, 0, size);
+            return;
+        }
+        else
+        {
+            huge_t_quick_delete(ptr);
+            // if not cache hit
+            if (!huge_t_cache_get(ptr, size))
+            {
+                *ptr = huge_t_make_zero(size);
+                return;
+            }
+        }
+    }
+    else
+    {
+        printf("huge_t_quick_init: no dynamic huge_t, it will destroy readability of this code!");
+        exit(1);
+    }
+}
+
 void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     if (a.size != b.size)
@@ -248,25 +358,20 @@ void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
         exit(1);
     }
     // if nullptr
-    if (ptr)
+    if (!ptr)
     {
-        // not good size
-        if (ptr->size != a.size)
-        {
-            huge_t_delete(ptr);
-
-            *ptr = huge_t_make_zero(a.size);
-        }
-        else
-        {
-            memset(ptr->bytes, 0, ptr->size);
-        }
+        printf("huge_t_add: ptr == nullptr");
+        exit(1);
     }
     else
     {
-        *ptr = huge_t_make_zero(a.size);
+        if (ptr->size < a.size)
+        {
+            huge_t_quick_init(ptr, a.size);
+        } else {
+            memset(ptr->bytes, 0, ptr->size);
+        }
     }
-
     int carry = 0;
     for (size_t i = 0; i < a.size; i++)
     {
@@ -285,6 +390,11 @@ void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
             // flush carry because we have place to put values
             carry = 0;
         }
+    }
+    // edge case for ptr more than a and b and sum of a and b leads to overflow
+    if (ptr->size > a.size && carry > 0)
+    {
+        ptr->bytes[a.size] = carry;
     }
 }
 
@@ -415,19 +525,22 @@ void huge_t_ptr_to_size(huge_t *ptr, const huge_t value)
     }
 }
 
+// do not save numerical digit
 void huge_t_split_at(huge_t *const ptr, huge_t *const ptr2, const huge_t value, size_t at)
 {
     // allocate at + 1 bytes for ptr, when you would want to optimize it
-    huge_t_ptr_to_size(ptr, value);
-    huge_t_ptr_to_size(ptr2, value);
+    huge_t_quick_init(ptr, at);
+    huge_t_quick_init(ptr2, at);
 
+    // low
     for (size_t i = 0; i < at; i++)
     {
         ptr->bytes[i] = value.bytes[i];
     }
-    for (size_t i = at; i < value.size; i++)
+    // high
+    for (size_t i = at; i < at * 2; i++)
     {
-        ptr2->bytes[i] = value.bytes[i];
+        ptr2->bytes[i - at] = value.bytes[i];
     }
 }
 
@@ -435,6 +548,8 @@ void huge_t_split_at(huge_t *const ptr, huge_t *const ptr2, const huge_t value, 
 void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
 {
     // https://en.wikipedia.org/wiki/Karatsuba_algorithm#Example
+    // static int counter = 0;
+    // printf("huge_t_multiply call: %d\n", ++counter);
 #if DEBUG_EXT_MULTIPLY
     static int i = 0;
     int funcid = i;
@@ -443,7 +558,22 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     huge_t_print(a);
     huge_t_print(b);
 #endif
-    huge_t_ptr_to_size(ptr, a);
+    if (ptr)
+    {
+        if (ptr->size < a.size)
+        {
+            huge_t_quick_init(ptr, a.size);
+        }
+        else
+        {
+            memset(ptr->bytes, 0, ptr->size);
+        }
+    }
+    else
+    {
+        printf("huge_t_multiply: no null ptr in huge_t pointer!!!");
+        exit(1);
+    }
 
     size_t last_byte_a = huge_t_get_last_byte_index(a);
     size_t last_byte_b = huge_t_get_last_byte_index(b);
@@ -462,16 +592,13 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     size_t m = last_byte_a > last_byte_b ? (last_byte_a + 1) / 2 : (last_byte_b + 1) / 2;
 
     // Split the digit sequences in the middle.
-    huge_t high1 = huge_t_make_zero(a.size);
-    huge_t low1 = huge_t_make_zero(a.size); 
-    huge_t high2 = huge_t_make_zero(a.size);
-    huge_t low2 = huge_t_make_zero(a.size);
+    huge_t high1, low1, high2, low2;
 
     huge_t_split_at(&low1, &high1, a, m);
     huge_t_split_at(&low2, &high2, b, m);
     // divide highs on 2^8 because split_at saves numerical digit
-    huge_t_byte_shift_right(&high1);
-    huge_t_byte_shift_right(&high2);
+    // huge_t_byte_shift_right(&high1);
+    // huge_t_byte_shift_right(&high2);
 #if DEBUG_EXT_MULTIPLY
 
     printf("fid = %d high1, low1: \n", funcid);
@@ -484,15 +611,19 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
 
 #endif
     // each huge_t_multiply function has to have its own dedicated memory for these variables
-    huge_t z0 = huge_t_make_zero(a.size);
-    huge_t z1 = huge_t_make_zero(a.size);
-    huge_t z2 = huge_t_make_zero(a.size);
+    huge_t z0, z1, z2;
+    huge_t_quick_init(&z0, a.size);
+    huge_t_quick_init(&z1, a.size);
+    huge_t_quick_init(&z2, a.size);
 
     // find z0
     huge_t_multiply(&z0, low1, low2);
 
-    huge_t sum1 = huge_t_make_zero(a.size);
-    huge_t sum2 = huge_t_make_zero(a.size);
+    huge_t sum1;
+    huge_t sum2;
+    huge_t_quick_init(&sum1, a.size);
+    huge_t_quick_init(&sum2, a.size);
+
     // find z1
     huge_t_add(&sum1, low1, high1);
     huge_t_add(&sum2, low2, high2);
@@ -559,15 +690,15 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
 
 #endif
     // delete it
-    huge_t_delete(&z0);
-    huge_t_delete(&z1);
-    huge_t_delete(&z2);
-    huge_t_delete(&sum1);
-    huge_t_delete(&sum2);
-    huge_t_delete(&high1);
-    huge_t_delete(&high2);
-    huge_t_delete(&low1);
-    huge_t_delete(&low2);
+    huge_t_quick_delete(&z0);
+    huge_t_quick_delete(&z1);
+    huge_t_quick_delete(&z2);
+    huge_t_quick_delete(&sum1);
+    huge_t_quick_delete(&sum2);
+    huge_t_quick_delete(&high1);
+    huge_t_quick_delete(&high2);
+    huge_t_quick_delete(&low1);
+    huge_t_quick_delete(&low2);
 }
 
 void huge_t_multiply_assign(huge_t *const a, const huge_t b)
