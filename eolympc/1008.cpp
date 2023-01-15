@@ -12,12 +12,14 @@ devide by 2^8 (one byte) and you get decimal for second byte
 */
 // HUGE
 #define BYTE_T_MAX 256
-#define DEBUG 1
+#define DEBUG 0
+// additional info durring execution
 #define DEBUG_EXT_MULTIPLY 0
+#define DEBUG_EXT_PARSE 0
 // if DEBUG set HUGE_SIZE to sizeof(int)
 // because multiplying is depends on this value
 // why? it is complicated, better take a look at huge_t_multiply function
-#define HUGE_SIZE 2000
+#define HUGE_SIZE 8
 
 typedef unsigned char byte_t;
 
@@ -368,7 +370,9 @@ void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
         if (ptr->size < a.size)
         {
             huge_t_quick_init(ptr, a.size);
-        } else {
+        }
+        else
+        {
             memset(ptr->bytes, 0, ptr->size);
         }
     }
@@ -529,8 +533,8 @@ void huge_t_ptr_to_size(huge_t *ptr, const huge_t value)
 void huge_t_split_at(huge_t *const ptr, huge_t *const ptr2, const huge_t value, size_t at)
 {
     // allocate at + 1 bytes for ptr, when you would want to optimize it
-    huge_t_quick_init(ptr, at);
-    huge_t_quick_init(ptr2, at);
+    huge_t_quick_init(ptr, at + 1);
+    huge_t_quick_init(ptr2, at + 1);
 
     // low
     for (size_t i = 0; i < at; i++)
@@ -538,7 +542,10 @@ void huge_t_split_at(huge_t *const ptr, huge_t *const ptr2, const huge_t value, 
         ptr->bytes[i] = value.bytes[i];
     }
     // high
-    for (size_t i = at; i < at * 2; i++)
+    // at * 2 + 1 is the result of get_last_byte_index
+    // we computated at in multiply func and we reverse computate last byte index
+    // and we add + 1 because it is last index
+    for (size_t i = at; i < at * 2 + 1 + 1; i++)
     {
         ptr2->bytes[i - at] = value.bytes[i];
     }
@@ -558,6 +565,7 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     huge_t_print(a);
     huge_t_print(b);
 #endif
+    // check ptr for not null
     if (ptr)
     {
         if (ptr->size < a.size)
@@ -574,9 +582,20 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
         printf("huge_t_multiply: no null ptr in huge_t pointer!!!");
         exit(1);
     }
+    // if zero then just set 0
+    if (huge_t_is_zero(a) || huge_t_is_zero(b)) {
+        huge_t_set(ptr, 0);
+
+#if DEBUG_EXT_MULTIPLY
+        printf("fid = %d ptr: \n", funcid);
+        huge_t_print(*ptr);
+#endif
+        return;
+    }
 
     size_t last_byte_a = huge_t_get_last_byte_index(a);
     size_t last_byte_b = huge_t_get_last_byte_index(b);
+    // little multiplication, we can do just char * char
     if (last_byte_a == 0 && last_byte_b == 0)
     {
         huge_t_set(ptr, a.bytes[0] * b.bytes[0]);
@@ -1183,9 +1202,22 @@ huge_t parse_str(char *str, int num_system)
 
         // multiply numerical digit on numerical system to get value in decimal
         huge_t_multiply(&tmp, num_digit, digit_to_dec);
+
         huge_t_add_assign(&result, tmp);
 
         huge_t_multiply_assign(&num_digit, num_sys);
+#if DEBUG_EXT_PARSE
+        printf("iter%d tmp:\n", i);
+        huge_t_print(tmp);
+        printf("iter%d result:\n", i);
+        huge_t_print(result);
+        printf("iter%d num_digit:\n", i);
+        huge_t_print(num_digit);
+        printf("iter%d digit_to_dec:\n", i);
+        huge_t_print(digit_to_dec);
+        printf("iter%d num_sys:\n", i);
+        huge_t_print(num_sys);
+#endif
     }
     huge_t_delete(&num_digit);
     huge_t_delete(&digit_to_dec);
