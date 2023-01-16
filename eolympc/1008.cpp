@@ -14,12 +14,13 @@ devide by 2^8 (one byte) and you get decimal for second byte
 #define BYTE_T_MAX 256
 #define DEBUG 0
 // additional info durring execution
-#define DEBUG_EXT_MULTIPLY 0
-#define DEBUG_EXT_PARSE 0
+#define DEBUG_EXT_ADDITION 0
+#define DEBUG_EXT_MULTIPLY 1
+#define DEBUG_EXT_PARSE 1
 // if DEBUG set HUGE_SIZE to sizeof(int)
 // because multiplying is depends on this value
 // why? it is complicated, better take a look at huge_t_multiply function
-#define HUGE_SIZE 8
+#define HUGE_SIZE 12
 
 typedef unsigned char byte_t;
 
@@ -130,14 +131,16 @@ void huge_t_set(huge_t *num, size_t value)
     }
 }
 
-void huge_t_delete(const huge_t *const num)
+void huge_t_delete(huge_t *const num)
 {
     if (num->bytes)
     {
         // static int i = 0;
         // printf("huge_t_delete: %d\n", ++i);
-
         free(num->bytes);
+        // do not uncomment this, some code expects after delete var size being where is was
+        // num->bytes = nullptr;
+        // num->size = 0;
     }
 }
 
@@ -151,96 +154,18 @@ bool huge_t_is_zero(const huge_t num)
     return true;
 }
 
-huge_t huge_t_copy(const huge_t num)
+
+void huge_t_copy(huge_t*const ptr, const huge_t num)
 {
-    huge_t num_copy = huge_t_make_zero(num.size);
-    for (size_t i = 0; i < num.size; i++)
-    {
-        num_copy.bytes[i] = num.bytes[i];
-    }
-    return num_copy;
-}
-
-void huge_t_add_assign(huge_t *const a, const huge_t b)
-{
-    // // huge_t_multiply require ability to add different size huge_t
-    // if (a->size != b.size)
-    // {
-    //     printf("huge_t_add_assign: a.size != b.size");
-    //     exit(1);
-    // }
-
-    int carry = 0;
-    for (size_t i = 0; i < a->size; i++)
-    {
-        // sum cannot be bigger than 255 + 255
-        int sum = a->bytes[i] + b.bytes[i] + carry;
-        if (sum >= BYTE_T_MAX)
-        {
-            // max value we can put into this byte
-            a->bytes[i] = sum % BYTE_T_MAX;
-            // save to carry
-            carry = sum / BYTE_T_MAX;
-        }
-        else
-        {
-            a->bytes[i] = sum;
-            // flush carry because we have place to put values
-            carry = 0;
-        }
-    }
-}
-
-huge_t huge_t_get_second_complement(const huge_t a)
-{
-    // to get second complement we need to add one
-    huge_t result = huge_t_make_zero(a.size);
-    huge_t one = huge_t_make_zero(a.size);
-    one.bytes[0] = 1;
-
-    for (size_t i = 0; i < a.size; i++)
-    {
-        result.bytes[i] = ~a.bytes[i];
-        // #if DEBUG_EXT
-        // printf("result: \n");
-        // huge_t_print(result);
-        // printf("a: \n");
-        // huge_t_print(a);
-        // #endif
-    }
-    huge_t_add_assign(&result, one);
-    huge_t_delete(&one);
-    return result;
-}
-
-void huge_t_convert_second_complement(huge_t *const a)
-{
-    // to get second complement we need to add one
-    huge_t one = huge_t_make_zero(a->size);
-    one.bytes[0] = 1;
-
-    for (size_t i = 0; i < a->size; i++)
-    {
-        a->bytes[i] = ~a->bytes[i];
-    }
-    huge_t_add_assign(a, one);
-    huge_t_delete(&one);
-}
-
-void huge_t_subtract_assign(huge_t *const a, const huge_t b)
-{
-    if (a->size != b.size)
-    {
-        printf("huge_t_subtract_assign: a.size != b.size\n");
+    if (ptr->size < num.size) {
+        printf("huge_t_copy: ptr->size < num.size\n");
         exit(1);
     }
-    huge_t complement = huge_t_get_second_complement(b);
-    // #if DEBUG_EXT
-    // printf("complement of b: \n");
-    // huge_t_print(complement);
-    // #endif
-    huge_t_add_assign(a, complement);
-    huge_t_delete(&complement);
+    memset(ptr->bytes, 0, ptr->size);
+    for (size_t i = 0; i < num.size; i++)
+    {
+        ptr->bytes[i] = num.bytes[i];
+    }
 }
 
 #define CACHE_SIZE 1000
@@ -354,12 +279,6 @@ void huge_t_quick_init(huge_t *const ptr, const size_t size)
 
 void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
 {
-    if (a.size != b.size)
-    {
-        printf("huge_t_add: a.size != b.size");
-        exit(1);
-    }
-    // if nullptr
     if (!ptr)
     {
         printf("huge_t_add: ptr == nullptr");
@@ -376,11 +295,20 @@ void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
             memset(ptr->bytes, 0, ptr->size);
         }
     }
+#if DEBUG_EXT_ADDITION
+    printf("a, b: \n");
+    huge_t_print(a);
+    huge_t_print(b);
+#endif
+
     int carry = 0;
-    for (size_t i = 0; i < a.size; i++)
+    for (size_t i = 0; i < a.size && i < b.size; i++)
     {
         // sum cannot be bigger than 255 + 255
         int sum = a.bytes[i] + b.bytes[i] + carry;
+#if DEBUG_EXT_ADDITION
+        printf("a.bytes[%zu] = %d, b.bytes[%zu] = %d\n", i, a.bytes[i], i, b.bytes[i]);
+#endif
         if (sum >= BYTE_T_MAX)
         {
             // max value we can put into this byte
@@ -396,10 +324,77 @@ void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
         }
     }
     // edge case for ptr more than a and b and sum of a and b leads to overflow
-    if (ptr->size > a.size && carry > 0)
+    if (carry > 0 && (ptr->size > a.size || ptr->size > b.size))
     {
-        ptr->bytes[a.size] = carry;
+
+        size_t least_size = a.size > b.size ? b.size : a.size;
+
+        // ptr's value is set to zero, so we can just assign carry to it
+        ptr->bytes[least_size] = carry;
     }
+}
+
+void huge_t_add_assign(huge_t *const a, const huge_t b)
+{
+    // // huge_t_multiply require ability to add different size huge_t
+    // if (a->size != b.size)
+    // {
+    //     printf("huge_t_add_assign: a.size != b.size");
+    //     exit(1);
+    // }
+    // we save multiplication into result var
+    huge_t result;
+    huge_t_quick_init(&result, a->size);
+    huge_t_add(&result, *a, b);
+    huge_t_quick_delete(a);
+    a->bytes = result.bytes;
+    a->size = result.size;
+}
+
+huge_t huge_t_get_second_complement(const huge_t a)
+{
+    // to get second complement we need to add one
+    huge_t result = huge_t_make_zero(a.size);
+    huge_t one = huge_t_make_zero(a.size);
+    one.bytes[0] = 1;
+
+    for (size_t i = 0; i < a.size; i++)
+    {
+        result.bytes[i] = ~a.bytes[i];
+    }
+    huge_t_add_assign(&result, one);
+    huge_t_delete(&one);
+    return result;
+}
+
+void huge_t_convert_second_complement(huge_t *const a)
+{
+    // to get second complement we need to add one
+    huge_t one = huge_t_make_zero(a->size);
+    one.bytes[0] = 1;
+
+    for (size_t i = 0; i < a->size; i++)
+    {
+        a->bytes[i] = ~a->bytes[i];
+    }
+    huge_t_add_assign(a, one);
+    huge_t_delete(&one);
+}
+
+void huge_t_subtract_assign(huge_t *const a, const huge_t b)
+{
+    if (a->size != b.size)
+    {
+        printf("huge_t_subtract_assign: a.size != b.size\n");
+        exit(1);
+    }
+    huge_t complement = huge_t_get_second_complement(b);
+    // #if DEBUG_EXT
+    // printf("complement of b: \n");
+    // huge_t_print(complement);
+    // #endif
+    huge_t_add_assign(a, complement);
+    huge_t_delete(&complement);
 }
 
 void huge_t_multiply_slow(huge_t *const ptr, const huge_t a, const huge_t b)
@@ -582,8 +577,10 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
         printf("huge_t_multiply: no null ptr in huge_t pointer!!!");
         exit(1);
     }
+
     // if zero then just set 0
-    if (huge_t_is_zero(a) || huge_t_is_zero(b)) {
+    if (huge_t_is_zero(a) || huge_t_is_zero(b))
+    {
         huge_t_set(ptr, 0);
 
 #if DEBUG_EXT_MULTIPLY
@@ -592,13 +589,31 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
 #endif
         return;
     }
-
     size_t last_byte_a = huge_t_get_last_byte_index(a);
     size_t last_byte_b = huge_t_get_last_byte_index(b);
     // little multiplication, we can do just char * char
     if (last_byte_a == 0 && last_byte_b == 0)
     {
         huge_t_set(ptr, a.bytes[0] * b.bytes[0]);
+
+#if DEBUG_EXT_MULTIPLY
+        printf("fid = %d ptr: \n", funcid);
+        huge_t_print(*ptr);
+#endif
+        return;
+    }
+    // if one return thing that is not one
+    if (last_byte_a == 0 && a.bytes[0] == 1)
+    {
+        huge_t_copy(ptr, b);
+
+#if DEBUG_EXT_MULTIPLY
+        printf("fid = %d ptr: \n", funcid);
+        huge_t_print(*ptr);
+#endif
+        return;
+    } else if (last_byte_b == 0 && b.bytes[0] == 1) {
+        huge_t_copy(ptr, a);
 
 #if DEBUG_EXT_MULTIPLY
         printf("fid = %d ptr: \n", funcid);
@@ -680,16 +695,25 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     printf("fid = %d z1 - z0: \n", funcid);
     huge_t_print(z1);
 #endif
-    huge_t_byte_shift_left(&z1);
+    // unoptimized I can rewrite byte shift so we can shift multiple bytes, but I will do it later
+    // power of z1 and z2 depends on where we split the numbers
+    // that's why we use m here 
+    for (size_t i = 0; i < m; i++)
+    {
+        huge_t_byte_shift_left(&z1);
+    }
 #if DEBUG_EXT_MULTIPLY
     printf("fid = %d z1 << 1 byte: \n", funcid);
     huge_t_print(z1);
 #endif
     // z2 * 2^16, that's why I make shift two times
     // make sure that it is calculated BEFORE z1 calculated
-    huge_t_byte_shift_left(&z2);
-    huge_t_byte_shift_left(&z2);
-
+    for (size_t i = 0; i < m; i++)
+    {
+        huge_t_byte_shift_left(&z2);
+        huge_t_byte_shift_left(&z2);
+    }
+    
     // calculate result
     huge_t_add_assign(ptr, z2);
     huge_t_add_assign(ptr, z1);
@@ -786,7 +810,7 @@ void huge_t_divide(huge_t *const ptr, const huge_t a, const huge_t b)
 
 // }
 #include <time.h>
-#define TEST_VALUES_SIZE 10
+#define TEST_VALUES_SIZE 100
 // returns array with size * 3 size
 // from 0 to size there are first operands (a)
 // from size to size * 2 there are second operands (b)
@@ -803,7 +827,7 @@ int *test_generate_values(const size_t size, const char oper)
     // fill from 0 to size * 2 with random values
     for (size_t i = 0; i < end_b; i++)
     {
-        values[i] = rand() % 10000;
+        values[i] = rand() % 30000;
     }
 
     // I dont know what is lambda sorry
