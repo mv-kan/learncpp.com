@@ -176,11 +176,6 @@ void huge_t_copy(huge_t *const ptr, huge_t *const copy)
 /*BASIC STUFF END*/
 
 /*MATH OPERATIONS START*/
-// void __huge_t_len_equal(const huge_t a, const huge_t b) {
-//     if (a.len != b.len) {
-
-//     }
-// }
 
 // overwrites @huge with a + b
 void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
@@ -294,7 +289,7 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const uint_internal_t b)
     __huge_t_ptr_check(&a);
     huge_t_set_zero(ptr);
 
-     // set the biggest len to huge
+    // set the biggest len to huge
     ptr->len = a.len;
 
     uint_internal_t carry = 0;
@@ -318,27 +313,130 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const uint_internal_t b)
             carry = 0;
         }
     }
-    
-    if (carry > 0 && (ptr->len < ptr->capacity)) {
+
+    if (carry > 0 && (ptr->len < ptr->capacity))
+    {
         ptr->chunks[ptr->len] = carry;
         ptr->len++;
     }
 }
 
+void huge_t_multiply_assign(huge_t *const ptr, const uint_internal_t b)
+{
+    // basic checks
+    __huge_t_ptr_check(ptr);
 
+    huge_t tmp;
+    huge_t_init_zero(&tmp, ptr->len);
 
-// void huge_t_divide(huge_t *const ptr, const huge_t a, const uint_internal_t b) {
+    huge_t_multiply(&tmp, *ptr, b);
 
-// }
+    huge_t_copy(ptr, &tmp);
+    huge_t_delete(&tmp);
+}
+
+// b cannot be bigger than UINT_INTERNAL_BASE otherwise wrong calculation
+void huge_t_divide(huge_t *const ptr, const huge_t a, const uint_internal_t b)
+{
+    __huge_t_ptr_check(ptr);
+    __huge_t_ptr_check(&a);
+    huge_t_set_zero(ptr);
+
+    ptr->len = a.len;
+
+    uint_internal_t borrow = 0;
+    for (size_t i = 0; i < a.len; i++)
+    {
+        size_t fromend = a.len - i - 1;
+        uint_internal_t sum = borrow + a.chunks[fromend];
+        if (sum >= b)
+        {
+            uint_internal_t division = sum / b;
+            uint_internal_t remainder = sum % b;
+            ptr->chunks[fromend] = division;
+            borrow = remainder * UINT_INTERNAL_BASE;
+        }
+        else if (sum < b && sum > 0)
+        {
+            borrow = sum * UINT_INTERNAL_BASE;
+        }
+    }
+}
+
+// b cannot be bigger than UINT_INTERNAL_BASE otherwise wrong calculation
+void huge_t_divide_assign(huge_t *const ptr, const uint_internal_t b)
+{
+    // basic checks
+    __huge_t_ptr_check(ptr);
+
+    huge_t tmp;
+    huge_t_init_zero(&tmp, ptr->len);
+
+    huge_t_divide(&tmp, *ptr, b);
+
+    huge_t_copy(ptr, &tmp);
+    huge_t_delete(&tmp);
+}
+
+// b cannot be bigger than UINT_INTERNAL_BASE otherwise wrong calculation
+uint_internal_t huge_t_calc_module(const huge_t a, const uint_internal_t b)
+{
+    __huge_t_ptr_check(&a);
+
+    uint_internal_t borrow = 0;
+    uint_internal_t remainder = 0;
+    for (size_t i = 0; i < a.len; i++)
+    {
+        size_t fromend = a.len - i - 1;
+        uint_internal_t sum = borrow + a.chunks[fromend];
+        if (sum >= b)
+        {
+            remainder = sum % b;
+            borrow = remainder * UINT_INTERNAL_BASE;
+        }
+        else if (sum < b && sum > 0)
+        {
+            borrow = sum * UINT_INTERNAL_BASE;
+            remainder = 0;
+        }
+    }
+    return remainder;
+}
+
+/*MATH OPERATIONS END*/
+/*INPUT START*/
+
+char to_char(const uint_internal_t decimal) {
+    if (decimal < 10)
+        return decimal + '0';
+    else if (decimal < 36)
+        return decimal + 'A';
+    else 
+        return '?';
+}
+
+uint_internal_t to_decimal(const char digit) {
+    if (digit <= '9') 
+        return digit - '0';
+    else if (digit <= 'Z')
+        return digit - 'A' + 10;
+}
+
+huge_t parse_str(const char* num, const uint_internal_t numericalSystem) {
+
+}
+
+char* to_str() {
+
+}
+
+/*INPUT END*/
 
 int main()
 {
-    huge_t a, result;
-    huge_t_init(&a, 123321, 2);
-    huge_t_init(&result, 0, 2);
+    huge_t a;
+    huge_t_init(&a, 12936182, 10);
 
-    huge_t_multiply(&result, a, 2);
 
-    huge_t_print_true(result);
     return 0;
 }
