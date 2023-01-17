@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <fcntl.h>
 int main() 
 {
     char str[2]{'a', '\0'};

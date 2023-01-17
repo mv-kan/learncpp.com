@@ -15,12 +15,12 @@ devide by 2^8 (one byte) and you get decimal for second byte
 #define DEBUG 0
 // additional info durring execution
 #define DEBUG_EXT_ADDITION 0
-#define DEBUG_EXT_MULTIPLY 1
-#define DEBUG_EXT_PARSE 1
+#define DEBUG_EXT_MULTIPLY 0
+#define DEBUG_EXT_PARSE 0
 // if DEBUG set HUGE_SIZE to sizeof(int)
 // because multiplying is depends on this value
 // why? it is complicated, better take a look at huge_t_multiply function
-#define HUGE_SIZE 12
+#define HUGE_SIZE 600
 
 typedef unsigned char byte_t;
 
@@ -168,14 +168,13 @@ void huge_t_copy(huge_t*const ptr, const huge_t num)
     }
 }
 
-#define CACHE_SIZE 1000
+#define CACHE_SIZE 2000
 huge_t cache[CACHE_SIZE];
 
 // push ptr into cache
 // returns false if not success
 bool huge_t_cache_push(huge_t *const ptr)
 {
-    return false;
     if (ptr)
     {
         for (size_t i = 0; i < CACHE_SIZE; i++)
@@ -206,7 +205,6 @@ nullptr in bytes and 0 in size considered as empty in huge_t cache
 */
 bool huge_t_cache_get(huge_t *const ptr, const size_t size)
 {
-    return false;
     if (ptr)
     {
         for (size_t i = 0; i < CACHE_SIZE; i++)
@@ -238,6 +236,8 @@ void huge_t_quick_delete(huge_t *const ptr)
     if (!huge_t_cache_push(ptr))
     {
         huge_t_delete(ptr);
+        ptr->bytes = NULL;
+        ptr->size = 0;
         return;
         printf("huge_t_quick_delete: cache is full");
         exit(1);
