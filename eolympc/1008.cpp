@@ -16,11 +16,11 @@ devide by 2^8 (one byte) and you get decimal for second byte
 // additional info durring execution
 #define DEBUG_EXT_ADDITION 0
 #define DEBUG_EXT_MULTIPLY 0
-#define DEBUG_EXT_PARSE 0
+#define DEBUG_EXT_PARSE 1
 // if DEBUG set HUGE_SIZE to sizeof(int)
 // because multiplying is depends on this value
 // why? it is complicated, better take a look at huge_t_multiply function
-#define HUGE_SIZE 600
+#define HUGE_SIZE 1000
 
 typedef unsigned char byte_t;
 
@@ -139,8 +139,8 @@ void huge_t_delete(huge_t *const num)
         // printf("huge_t_delete: %d\n", ++i);
         free(num->bytes);
         // do not uncomment this, some code expects after delete var size being where is was
-        // num->bytes = nullptr;
-        // num->size = 0;
+        num->bytes = nullptr;
+        num->size = 0;
     }
 }
 
@@ -168,7 +168,7 @@ void huge_t_copy(huge_t*const ptr, const huge_t num)
     }
 }
 
-#define CACHE_SIZE 2000
+#define CACHE_SIZE 100000
 huge_t cache[CACHE_SIZE];
 
 // push ptr into cache
@@ -235,7 +235,9 @@ void huge_t_quick_delete(huge_t *const ptr)
 {
     if (!huge_t_cache_push(ptr))
     {
-        huge_t_delete(ptr);
+        if (ptr->bytes) {
+            huge_t_delete(ptr);
+        }
         ptr->bytes = NULL;
         ptr->size = 0;
         return;
@@ -507,6 +509,8 @@ size_t huge_t_get_last_byte_index(huge_t a)
     return 0;
 }
 
+// can be lazy depending on condisions 
+
 // create new huge_t and assign it to ptr if ptr is null or ptr->size != value.size
 // if ptr->size == value.size then just flush ptr
 // think and delete this atrocity
@@ -758,6 +762,7 @@ void huge_t_multiply_assign(huge_t *const a, const huge_t b)
     huge_t_multiply(&result, *a, b);
     huge_t_delete(a);
     a->bytes = result.bytes;
+    a->size = result.size;
 }
 
 void huge_t_subtract(huge_t *const ptr, const huge_t a, const huge_t b)
@@ -1219,6 +1224,7 @@ huge_t parse_str(char *str, int num_system)
 
     for (int i = len - 1; i >= 0; --i)
     {
+        
         // convert num in numericalSystem to decimal
         char digit = str[i];
         // here I am just being lazy
