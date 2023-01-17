@@ -12,7 +12,7 @@ RULES:
 // don't fuck with binary
 #define UINT_INTERNAL_BASE 1000
 #define HUGE_T_CAPACITY 100
-#define MAX_INPUT 1000
+#define MAX_CHAR_INPUT 1000
 typedef uint16_t uint_internal_t;
 
 struct huge_s
@@ -23,15 +23,19 @@ struct huge_s
 };
 typedef struct huge_s huge_t;
 /*BASIC STUFF START*/
-// Basically checks if huge_t ptr as object exists 
+// Basically checks if huge_t ptr as object exists
 // if NULL then exit(1), because of RULE 1 no pointers to huge_t object
 // if ptr->capacity is not HUGE_T_CAPACITY then exit(1), because this object is not initialized
 // proper error handling is not needed for this task
-void __huge_t_ptr_check(const huge_t*const ptr) {
-    if (!ptr) {
+void __huge_t_ptr_check(const huge_t *const ptr)
+{
+    if (!ptr)
+    {
         printf("__huge_t_ptr_check: ptr == NULL\n");
         exit(1);
-    } else if (ptr->capacity != HUGE_T_CAPACITY) {
+    }
+    else if (ptr->capacity != HUGE_T_CAPACITY)
+    {
         printf("__huge_t_ptr_check: huge_t object is not initialized!\n");
         exit(1);
     }
@@ -42,7 +46,7 @@ void __huge_t_init(huge_t *const huge)
     if (huge)
     {
         size_t size_of_chunks = sizeof(uint_internal_t) * HUGE_T_CAPACITY;
-        huge->chunks = malloc(size_of_chunks);
+        huge->chunks = (uint_internal_t *)malloc(size_of_chunks);
         memset(huge->chunks, 0, size_of_chunks);
         huge->capacity = HUGE_T_CAPACITY;
         huge->len = 0;
@@ -55,10 +59,11 @@ void __huge_t_init(huge_t *const huge)
 }
 // always call at least this init
 // otherwise it is unproper use of huge_t
-void huge_t_init_zero(huge_t *const huge)
+void huge_t_init_zero(huge_t *const huge, const size_t len)
 {
     // __huge_t_init make it automatically zero
     __huge_t_init(huge);
+    huge->len = len;
 }
 
 void huge_t_init(huge_t *const huge, size_t value, const size_t len)
@@ -109,11 +114,13 @@ void huge_t_print(const huge_t huge)
         // print from end to start
         printf("%03d", huge.chunks[huge.len - i - 1] % UINT_INTERNAL_BASE);
     }
-    if (huge.len == 0) {
+    if (huge.len == 0)
+    {
         printf("%03d", 0);
     }
     printf("\n");
 }
+
 void huge_t_print_true(const huge_t huge)
 {
     __huge_t_ptr_check(&huge);
@@ -122,18 +129,21 @@ void huge_t_print_true(const huge_t huge)
         // print from end to start
         printf(" %d ", huge.chunks[huge.len - i - 1]);
     }
-    if (huge.len == 0) {
+    if (huge.len == 0)
+    {
         printf(" %d ", 0);
     }
     printf("\n");
 }
 
-void huge_t_set_zero(huge_t*const huge) {
+void huge_t_set_zero(huge_t *const huge)
+{
     __huge_t_ptr_check(huge);
     memset(huge->chunks, 0, huge->capacity * sizeof(uint_internal_t));
 }
 
-void huge_t_set(huge_t*const huge, size_t value) {
+void huge_t_set(huge_t *const huge, size_t value)
+{
     __huge_t_ptr_check(huge);
     huge_t_set_zero(huge);
     // reset to zero
@@ -150,11 +160,17 @@ void huge_t_set(huge_t*const huge, size_t value) {
     huge->len = chunk;
 }
 
-void huge_t_copy(huge_t*const ptr, huge_t*const copy) {
+void huge_t_copy(huge_t *const ptr, huge_t *const copy)
+{
     __huge_t_ptr_check(ptr);
     __huge_t_ptr_check(copy);
+    huge_t_set_zero(ptr);
 
-    
+    ptr->len = copy->len;
+    for (size_t i = 0; i < ptr->len; i++)
+    {
+        ptr->chunks[i] = copy->chunks[i];
+    }
 }
 /*BASIC STUFF END*/
 
@@ -164,57 +180,126 @@ void huge_t_copy(huge_t*const ptr, huge_t*const copy) {
 
 //     }
 // }
-// overwrites @huge with a + b 
-void huge_t_add(huge_t*const huge, const huge_t a, const huge_t b) {
+
+// overwrites @huge with a + b
+void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
+{
     // basic checks
-    __huge_t_ptr_check(huge);
-    huge_t_set_zero(huge);
+    __huge_t_ptr_check(ptr);
+    __huge_t_ptr_check(&a);
+    __huge_t_ptr_check(&b);
+    huge_t_set_zero(ptr);
 
     // set the biggest len to huge
-    huge->len = a.len > b.len ? a.len : b.len;
+    ptr->len = a.len > b.len ? a.len : b.len;
 
     uint_internal_t carry = 0;
     for (size_t i = 0; i < a.len || i < b.len; i++)
     {
-        // sum cannot be bigger than 255 + 255
         size_t sum = (size_t)a.chunks[i] + b.chunks[i] + carry;
 
         if (sum >= UINT_INTERNAL_BASE)
         {
             // max value we can put into this byte
-            huge->chunks[i] = sum % UINT_INTERNAL_BASE;
+            ptr->chunks[i] = sum % UINT_INTERNAL_BASE;
             // save to carry
             carry = sum / UINT_INTERNAL_BASE;
         }
         else
         {
-            huge->chunks[i] = sum;
+            ptr->chunks[i] = sum;
             // flush carry because we have place to put values
             carry = 0;
         }
     }
 }
 
-void huge_t_sec_complement() {
+void huge_t_add_assign(huge_t *const ptr, const huge_t b)
+{
+    // basic checks
+    __huge_t_ptr_check(ptr);
+    __huge_t_ptr_check(&b);
 
+    huge_t tmp;
+    huge_t_init_zero(&tmp, ptr->len);
+
+    huge_t_add(&tmp, *ptr, b);
+
+    huge_t_copy(ptr, &tmp);
+    huge_t_delete(&tmp);
 }
-// void huge_t_subtract(huge_t*const huge, const huge_t a, const huge_t b) {
-//     // basic checks
-//     __huge_t_ptr_check(huge);
-//     huge_t_set_zero(huge);
-// }
+
+void huge_t_subtract(huge_t *const ptr, const huge_t a, const huge_t b)
+{
+    // basic checks
+    __huge_t_ptr_check(ptr);
+    __huge_t_ptr_check(&a);
+    __huge_t_ptr_check(&b);
+    huge_t_set_zero(ptr);
+    if (a.len != b.len)
+    {
+        printf("huge_t_subtract: a.len != b.len\n");
+        exit(1);
+    }
+    ptr->len = a.len;
+
+    uint_internal_t borrow = 0;
+    for (size_t i = 0; i < ptr->len; i++)
+    {
+        // we need to know when subtract is negative
+        int64_t subtract = ((int64_t)a.chunks[i] - (int64_t)borrow) - (int64_t)b.chunks[i];
+        if (subtract < 0)
+        {
+            // yes borrow here
+            borrow = 1;
+            // borrowed things, here we might have conversion error
+            // but you just gotta disable it, because here it was explicit type conversion
+            uint_internal_t borrowed = ~(uint_internal_t)0 % UINT_INTERNAL_BASE;
+            // this is actually subtraction
+            borrowed += (uint_internal_t)subtract;
+            // assign subtraction of borrowed to result
+            ptr->chunks[i] = borrowed;
+        }
+        else
+        {
+            // no borrow here
+            borrow = 0;
+
+            ptr->chunks[i] = subtract;
+        }
+    }
+}
+
+void huge_t_subtract_assing(huge_t *const ptr, const huge_t b) {
+    // basic checks
+    __huge_t_ptr_check(ptr);
+    __huge_t_ptr_check(&b);
+
+    huge_t tmp;
+    huge_t_init_zero(&tmp, ptr->len);
+
+    huge_t_subtract(&tmp, *ptr, b);
+
+    huge_t_copy(ptr, &tmp);
+    huge_t_delete(&tmp);
+}
 
 int main()
 {
-    huge_t huge;
-    huge_t_init(&huge, 123123, 2);
-    huge_t_print(huge);
+    huge_t a, b, c;
+    huge_t_init(&a, 123, 2);
+    huge_t_init(&b, 23, 2);
+    huge_t_init(&c, 0, 2);
 
-    huge_t a, b;
-    huge_t_init(&a, 12, 2);
-    huge_t_init(&b, 123000, 4);
-    huge_t_add(&huge, a, b);
+    huge_t_subtract(&c, a, b);
+    huge_t_print_true(c);
+ 
+    huge_t_subtract_assing(&c, b);
+    huge_t_print_true(c);
 
-    huge_t_print_true(huge);
+    huge_t_delete(&a);
+    huge_t_delete(&b);
+    huge_t_delete(&c);
+
     return 0;
 }
