@@ -21,6 +21,7 @@ struct huge_s
     size_t capacity;
     uint_internal_t *chunks;
 };
+
 typedef struct huge_s huge_t;
 /*BASIC STUFF START*/
 // Basically checks if huge_t ptr as object exists
@@ -270,7 +271,8 @@ void huge_t_subtract(huge_t *const ptr, const huge_t a, const huge_t b)
     }
 }
 
-void huge_t_subtract_assing(huge_t *const ptr, const huge_t b) {
+void huge_t_subtract_assing(huge_t *const ptr, const huge_t b)
+{
     // basic checks
     __huge_t_ptr_check(ptr);
     __huge_t_ptr_check(&b);
@@ -284,6 +286,13 @@ void huge_t_subtract_assing(huge_t *const ptr, const huge_t b) {
     huge_t_delete(&tmp);
 }
 
+// make multiplying only for 2 to 36
+// this is genious!!!
+void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
+{
+
+}
+
 int main()
 {
     huge_t a, b, c;
@@ -293,7 +302,7 @@ int main()
 
     huge_t_subtract(&c, a, b);
     huge_t_print_true(c);
- 
+
     huge_t_subtract_assing(&c, b);
     huge_t_print_true(c);
 
