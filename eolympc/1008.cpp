@@ -594,7 +594,7 @@ void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
     // little multiplication, we can do just char * char
     if (last_byte_a == 0 && last_byte_b == 0)
     {
-        huge_t_set(ptr, a.bytes[0] * b.bytes[0]);
+        huge_t_set(ptr, (size_t)(a.bytes[0] * b.bytes[0]));
 
 #if DEBUG_EXT_MULTIPLY
         printf("fid = %d ptr: \n", funcid);
