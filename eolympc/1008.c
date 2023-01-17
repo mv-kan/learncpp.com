@@ -288,27 +288,57 @@ void huge_t_subtract_assing(huge_t *const ptr, const huge_t b)
 
 // make multiplying only for 2 to 36
 // this is genious!!!
-void huge_t_multiply(huge_t *const ptr, const huge_t a, const huge_t b)
+void huge_t_multiply(huge_t *const ptr, const huge_t a, const uint_internal_t b)
 {
+    __huge_t_ptr_check(ptr);
+    __huge_t_ptr_check(&a);
+    huge_t_set_zero(ptr);
 
+     // set the biggest len to huge
+    ptr->len = a.len;
+
+    uint_internal_t carry = 0;
+    for (size_t i = 0; i < a.len; i++)
+    {
+        size_t multiplied = ((size_t)a.chunks[i] * b) + carry;
+
+        if (multiplied >= UINT_INTERNAL_BASE)
+        {
+            // max value we can put into this byte
+            ptr->chunks[i] = multiplied % UINT_INTERNAL_BASE;
+
+            // save to carry
+            carry = multiplied / UINT_INTERNAL_BASE;
+        }
+        else
+        {
+            ptr->chunks[i] = multiplied;
+
+            // flush carry because we have place to put values
+            carry = 0;
+        }
+    }
+    
+    if (carry > 0 && (ptr->len < ptr->capacity)) {
+        ptr->chunks[ptr->len] = carry;
+        ptr->len++;
+    }
 }
+
+
+
+// void huge_t_divide(huge_t *const ptr, const huge_t a, const uint_internal_t b) {
+
+// }
 
 int main()
 {
-    huge_t a, b, c;
-    huge_t_init(&a, 123, 2);
-    huge_t_init(&b, 23, 2);
-    huge_t_init(&c, 0, 2);
+    huge_t a, result;
+    huge_t_init(&a, 123321, 2);
+    huge_t_init(&result, 0, 2);
 
-    huge_t_subtract(&c, a, b);
-    huge_t_print_true(c);
+    huge_t_multiply(&result, a, 2);
 
-    huge_t_subtract_assing(&c, b);
-    huge_t_print_true(c);
-
-    huge_t_delete(&a);
-    huge_t_delete(&b);
-    huge_t_delete(&c);
-
+    huge_t_print_true(result);
     return 0;
 }
