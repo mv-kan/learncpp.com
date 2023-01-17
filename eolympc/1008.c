@@ -5,8 +5,8 @@
 #include <stdint.h>
 /*
 RULES:
-there is not huge_t dynamically allocated, they are always stack vars (but not fragments in huge_t)
-
+1. there is not huge_t dynamically allocated, they are always stack vars (but not fragments in huge_t)
+2. Every huge_t object has capacity of HUGE_T_CAPACITY
 */
 // please use just 10-base base
 // don't fuck with binary
@@ -22,7 +22,20 @@ struct huge_s
     uint_internal_t *chunks;
 };
 typedef struct huge_s huge_t;
-
+/*BASIC STUFF START*/
+// Basically checks if huge_t ptr as object exists 
+// if NULL then exit(1), because of RULE 1 no pointers to huge_t object
+// if ptr->capacity is not HUGE_T_CAPACITY then exit(1), because this object is not initialized
+// proper error handling is not needed for this task
+void __huge_t_ptr_check(const huge_t*const ptr) {
+    if (!ptr) {
+        printf("__huge_t_ptr_check: ptr == NULL\n");
+        exit(1);
+    } else if (ptr->capacity != HUGE_T_CAPACITY) {
+        printf("__huge_t_ptr_check: huge_t object is not initialized!\n");
+        exit(1);
+    }
+}
 // calls everytime when init method is raised
 void __huge_t_init(huge_t *const huge)
 {
@@ -48,25 +61,23 @@ void huge_t_init_zero(huge_t *const huge)
     __huge_t_init(huge);
 }
 
-void huge_t_init(huge_t *const huge, size_t value)
+void huge_t_init(huge_t *const huge, size_t value, const size_t len)
 {
     __huge_t_init(huge);
-    size_t chunk = 0;
-    while (value > 0)
+    huge->len = len;
+    for (size_t i = 0; i < len && value > 0; i++)
     {
-        // we put the value to byte
-        huge->chunks[chunk] = value % UINT_INTERNAL_BASE;
-        // increment iBytenum to set it to empty byte in @bytenum
-        chunk++;
+        huge->chunks[i] = value % UINT_INTERNAL_BASE;
+
         // devide result
         value /= UINT_INTERNAL_BASE;
     }
-    huge->len = chunk;
 }
 
 // when deleted capacity is zero
 void __huge_t_delete(huge_t *const huge)
 {
+    __huge_t_ptr_check(huge);
     if (huge)
     {
         free(huge->chunks);
@@ -83,24 +94,127 @@ void __huge_t_delete(huge_t *const huge)
 
 void huge_t_delete(huge_t *const huge)
 {
+    __huge_t_ptr_check(huge);
     __huge_t_delete(huge);
 }
 
 // to 10-base value if UINT_INTERNAL_BASE is 10-base
+// formating depends on UINT_INTERNAL_BASE
+// if you were to change UINT_INTERNAL_BASE then you have to change this function too
 void huge_t_print(const huge_t huge)
 {
+    __huge_t_ptr_check(&huge);
     for (size_t i = 0; i < huge.len; i++)
     {
         // print from end to start
-        printf("%d", huge.chunks[huge.len - i - 1]);
+        printf("%03d", huge.chunks[huge.len - i - 1] % UINT_INTERNAL_BASE);
+    }
+    if (huge.len == 0) {
+        printf("%03d", 0);
+    }
+    printf("\n");
+}
+void huge_t_print_true(const huge_t huge)
+{
+    __huge_t_ptr_check(&huge);
+    for (size_t i = 0; i < huge.len; i++)
+    {
+        // print from end to start
+        printf(" %d ", huge.chunks[huge.len - i - 1]);
+    }
+    if (huge.len == 0) {
+        printf(" %d ", 0);
     }
     printf("\n");
 }
 
+void huge_t_set_zero(huge_t*const huge) {
+    __huge_t_ptr_check(huge);
+    memset(huge->chunks, 0, huge->capacity * sizeof(uint_internal_t));
+}
+
+void huge_t_set(huge_t*const huge, size_t value) {
+    __huge_t_ptr_check(huge);
+    huge_t_set_zero(huge);
+    // reset to zero
+    size_t chunk = 0;
+    while (value > 0)
+    {
+        // we put the value to byte
+        huge->chunks[chunk] = value % UINT_INTERNAL_BASE;
+        // increment iBytenum to set it to empty byte in @bytenum
+        chunk++;
+        // devide result
+        value /= UINT_INTERNAL_BASE;
+    }
+    huge->len = chunk;
+}
+
+void huge_t_copy(huge_t*const ptr, huge_t*const copy) {
+    __huge_t_ptr_check(ptr);
+    __huge_t_ptr_check(copy);
+
+    
+}
+/*BASIC STUFF END*/
+
+/*MATH OPERATIONS START*/
+// void __huge_t_len_equal(const huge_t a, const huge_t b) {
+//     if (a.len != b.len) {
+
+//     }
+// }
+// overwrites @huge with a + b 
+void huge_t_add(huge_t*const huge, const huge_t a, const huge_t b) {
+    // basic checks
+    __huge_t_ptr_check(huge);
+    huge_t_set_zero(huge);
+
+    // set the biggest len to huge
+    huge->len = a.len > b.len ? a.len : b.len;
+
+    uint_internal_t carry = 0;
+    for (size_t i = 0; i < a.len || i < b.len; i++)
+    {
+        // sum cannot be bigger than 255 + 255
+        size_t sum = (size_t)a.chunks[i] + b.chunks[i] + carry;
+
+        if (sum >= UINT_INTERNAL_BASE)
+        {
+            // max value we can put into this byte
+            huge->chunks[i] = sum % UINT_INTERNAL_BASE;
+            // save to carry
+            carry = sum / UINT_INTERNAL_BASE;
+        }
+        else
+        {
+            huge->chunks[i] = sum;
+            // flush carry because we have place to put values
+            carry = 0;
+        }
+    }
+}
+
+void huge_t_sec_complement() {
+
+}
+// void huge_t_subtract(huge_t*const huge, const huge_t a, const huge_t b) {
+//     // basic checks
+//     __huge_t_ptr_check(huge);
+//     huge_t_set_zero(huge);
+// }
+
 int main()
 {
     huge_t huge;
-    huge_t_init(&huge, 123123);
+    huge_t_init(&huge, 123123, 2);
     huge_t_print(huge);
+
+    huge_t a, b;
+    huge_t_init(&a, 12, 2);
+    huge_t_init(&b, 123000, 4);
+    huge_t_add(&huge, a, b);
+
+    huge_t_print_true(huge);
     return 0;
 }
