@@ -19,9 +19,13 @@ int main()
     {
         if (buf[last_char - i] >= 48 && buf[last_char - i] <= 57)
         {
-            to_del = last_char - i;
+            // swap
+            to_del = last_char - i - 1;
+            buf[to_del] =  buf[last_char - i];
             break;
         }
     }
-    write(STDOUT_FILENO, buf, to_del);
+    buf[to_del + 1] = '\0';
+    // printf("%s", buf);
+    write(STDOUT_FILENO, buf, to_del + 1);
 }
