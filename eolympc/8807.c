@@ -4,27 +4,31 @@
 
 int main()
 {
-    char buff[BUFFER_SIZE];
-    read(STDIN_FILENO, buff, BUFFER_SIZE);
+    char buf[BUFFER_SIZE];
+    read(STDIN_FILENO, buf, BUFFER_SIZE);
 
-    if (buff[0] == '0') {
-        char zero = '0';
-        write(STDOUT_FILENO, &zero, 1);
+    size_t last_char = 0;
+    while (buf[last_char] != '\0')
+        last_char++;
+
+    size_t last_digit = 0;
+    for (size_t i = 0; i < BUFFER_SIZE; i++)
+    {
+        if (buf[last_char - i] >= 48 && buf[last_char - i] <= 57)
+        {
+            // swap
+            last_digit = last_char - i;
+            break;
+        }
     }
-    else if (buff[0] == '-') {
-        int strlen = 0;
-        while(buff[strlen] != '\n')
-            strlen++;
-        write(STDOUT_FILENO, buff + 1, strlen);
+    char minus = '-';
+    if (buf[0] == '0') {
+        write(STDOUT_FILENO, buf, 1);
+    }
+    else if (buf[0] == minus) {
+        write(STDOUT_FILENO, buf + 1, last_digit + 1);
     } else {
-        char minus = '-';
         write(STDOUT_FILENO, &minus, 1);
-
-        int strlen = 0;
-        while(buff[strlen] != '\n')
-            strlen++;
-        write(STDOUT_FILENO, buff, strlen);
+        write(STDOUT_FILENO, buf, last_digit + 1);
     }
-
-    
 }
