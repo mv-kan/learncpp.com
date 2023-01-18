@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include <stdint.h>
+#include <stdbool.h>
 /*
 RULES:
 1. there is not huge_t dynamically allocated, they are always stack vars (but not fragments in huge_t)
@@ -10,10 +10,10 @@ RULES:
 */
 // please use just 10-base base
 // don't fuck with binary
-#define UINT_INTERNAL_BASE 1000
-#define HUGE_T_CAPACITY 100
+#define UINT_INTERNAL_BASE 100000
+#define HUGE_T_CAPACITY 1000
 #define MAX_CHAR_INPUT 1000
-typedef uint16_t uint_internal_t;
+typedef uint64_t uint_internal_t;
 
 struct huge_s
 {
@@ -104,38 +104,38 @@ void huge_t_delete(huge_t *const huge)
     __huge_t_delete(huge);
 }
 
-// to 10-base value if UINT_INTERNAL_BASE is 10-base
-// formating depends on UINT_INTERNAL_BASE
-// if you were to change UINT_INTERNAL_BASE then you have to change this function too
-void huge_t_print(const huge_t huge)
-{
-    __huge_t_ptr_check(&huge);
-    for (size_t i = 0; i < huge.len; i++)
-    {
-        // print from end to start
-        printf("%03d", huge.chunks[huge.len - i - 1] % UINT_INTERNAL_BASE);
-    }
-    if (huge.len == 0)
-    {
-        printf("%03d", 0);
-    }
-    printf("\n");
-}
+// // to 10-base value if UINT_INTERNAL_BASE is 10-base
+// // formating depends on UINT_INTERNAL_BASE
+// // if you were to change UINT_INTERNAL_BASE then you have to change this function too
+// void huge_t_print(const huge_t huge)
+// {
+//     __huge_t_ptr_check(&huge);
+//     for (size_t i = 0; i < huge.len; i++)
+//     {
+//         // print from end to start
+//         printf("%zu", huge.chunks[huge.len - i - 1] % UINT_INTERNAL_BASE);
+//     }
+//     if (huge.len == 0)
+//     {
+//         printf("%d", 0);
+//     }
+//     printf("\n");
+// }
 
-void huge_t_print_true(const huge_t huge)
-{
-    __huge_t_ptr_check(&huge);
-    for (size_t i = 0; i < huge.len; i++)
-    {
-        // print from end to start
-        printf(" %d ", huge.chunks[huge.len - i - 1]);
-    }
-    if (huge.len == 0)
-    {
-        printf(" %d ", 0);
-    }
-    printf("\n");
-}
+// void huge_t_print_true(const huge_t huge)
+// {
+//     __huge_t_ptr_check(&huge);
+//     for (size_t i = 0; i < huge.len; i++)
+//     {
+//         // print from end to start
+//         printf(" %zu ", huge.chunks[huge.len - i - 1]);
+//     }
+//     if (huge.len == 0)
+//     {
+//         printf(" %zu ", (size_t)0);
+//     }
+//     printf("\n");
+// }
 
 void huge_t_set_zero(huge_t *const huge)
 {
@@ -161,22 +161,30 @@ void huge_t_set(huge_t *const huge, size_t value)
     huge->len = chunk;
 }
 
-void huge_t_copy(huge_t *const ptr, huge_t *const copy)
+// can fix here, original should be as value not pointer
+void huge_t_copy(huge_t *const ptr, huge_t *const original)
 {
     __huge_t_ptr_check(ptr);
-    __huge_t_ptr_check(copy);
+    __huge_t_ptr_check(original);
     huge_t_set_zero(ptr);
 
-    ptr->len = copy->len;
+    ptr->len = original->len;
     for (size_t i = 0; i < ptr->len; i++)
     {
-        ptr->chunks[i] = copy->chunks[i];
+        ptr->chunks[i] = original->chunks[i];
     }
 }
 /*BASIC STUFF END*/
 
 /*MATH OPERATIONS START*/
-
+bool huge_t_is_zero(const huge_t huge) {
+    for (size_t i = 0; i < huge.len; i++)
+    {
+        if(huge.chunks[i] != 0)
+            return false;
+    }
+    return true;    
+}
 // overwrites @huge with a + b
 void huge_t_add(huge_t *const ptr, const huge_t a, const huge_t b)
 {
@@ -397,7 +405,7 @@ uint_internal_t huge_t_calc_module(const huge_t a, const uint_internal_t b)
         else if (sum < b && sum > 0)
         {
             borrow = sum * UINT_INTERNAL_BASE;
-            remainder = 0;
+            remainder = sum;
         }
     }
     return remainder;
@@ -405,38 +413,87 @@ uint_internal_t huge_t_calc_module(const huge_t a, const uint_internal_t b)
 
 /*MATH OPERATIONS END*/
 /*INPUT START*/
+char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 char to_char(const uint_internal_t decimal) {
-    if (decimal < 10)
-        return decimal + '0';
-    else if (decimal < 36)
-        return decimal + 'A';
-    else 
-        return '?';
+    return digits[decimal];
 }
 
 uint_internal_t to_decimal(const char digit) {
-    if (digit <= '9') 
-        return digit - '0';
-    else if (digit <= 'Z')
-        return digit - 'A' + 10;
+    char*find = strchr(digits, digit);
+    return (uint_internal_t)(find - digits);
 }
 
-huge_t parse_str(const char* num, const uint_internal_t numericalSystem) {
+// numerical system
+huge_t parse_str(const char* str, const uint_internal_t num_sys) {
+    size_t len = strlen(str);
+    
+    huge_t result;
+    huge_t tmp;
+    huge_t num_digit; // numerical digit
 
+    huge_t_init(&num_digit, 1, 1);
+    huge_t_init_zero(&result, 0);
+    huge_t_init_zero(&tmp, 0);
+    for (int i = len - 1; i >= 0; --i)
+    {
+        // convert num in numericalSystem to decimal 
+        char digit = str[i];
+        uint_internal_t decimal = to_decimal(digit);
+
+        // multiply numerical digit on numerical system to get value in decimal
+        huge_t_multiply(&tmp, num_digit, decimal);
+        huge_t_add_assign(&result, tmp);
+        huge_t_multiply_assign(&num_digit, num_sys);
+    }
+    huge_t_delete(&tmp);
+    huge_t_delete(&num_digit);
+
+    return result;
 }
 
-char* to_str() {
+char* to_str(huge_t decimal, uint_internal_t num_sys) {
+    char tmp[MAX_CHAR_INPUT * 10];
+    size_t result_len = 0;
+    huge_t n;
+    huge_t_init(&n, 0, 0);
+    huge_t_copy(&n, &decimal);
 
+    while (!huge_t_is_zero(n)) {
+        uint_internal_t remainder = huge_t_calc_module(n, num_sys);
+        char digit = to_char(remainder);
+
+        tmp[result_len] = digit;
+        result_len++;
+        huge_t_divide_assign(&n, num_sys);
+    }
+    huge_t_delete(&n);
+    // reverse result string
+    char* result = (char*)malloc((size_t)(result_len + 1)); // + 1 for \0 character
+    for (size_t i = 0; i < result_len; i++)
+    {
+        result[i] = tmp[result_len - i - 1]; // - 1 because result len is not index it is size of @tmp
+    }
+    result[result_len] = '\0';
+    return result;
 }
 
 /*INPUT END*/
 
 int main()
 {
-    huge_t a;
-    huge_t_init(&a, 12936182, 10);
+    int m = 0;
+    int k = 0;
+    scanf("%d %d", &m, &k);
 
+    char input_str[MAX_CHAR_INPUT ];
+    scanf("%s", input_str);
+    input_str[MAX_CHAR_INPUT] = '\0';
+    huge_t num = parse_str(input_str, m);
+    char* output_str = to_str(num, k);
 
+    printf("%s\n", output_str);
+    free(output_str);
+    huge_t_delete(&num);
     return 0;
 }
