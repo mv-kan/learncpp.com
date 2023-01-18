@@ -20,9 +20,9 @@ run_one_yolo $(SRC):
 	$(dir ${SRC})/main.exe
 
 run_one_c:
-	gcc ${FLAGS_C} ${SRC} -o $(dir ${SRC})/main.exe
+	gcc ${FLAGS_C} ${SRC} -o $(dir ${SRC})/main.exe -lm
 	$(dir ${SRC})/main.exe
 
 run_one_args:
-	@g++ ${FLAGS} ${SRC} -o $(dir ${SRC})/main.exe
+	@g++ ${FLAGS} ${SRC} -o $(dir ${SRC})/main.exe 
 	$(dir ${SRC})/main.exe ${ARGS}

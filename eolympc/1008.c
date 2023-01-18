@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+
 /*
 RULES:
 1. there is not huge_t dynamically allocated, they are always stack vars (but not fragments in huge_t)
@@ -10,9 +11,9 @@ RULES:
 */
 // please use just 10-base base
 // don't fuck with binary
-#define UINT_INTERNAL_BASE 100000
-#define HUGE_T_CAPACITY 1000
-#define MAX_CHAR_INPUT 1000
+#define UINT_INTERNAL_BASE 1000
+#define HUGE_T_CAPACITY 2000
+#define MAX_CHAR_INPUT 1500
 typedef uint64_t uint_internal_t;
 
 struct huge_s
@@ -426,7 +427,7 @@ uint_internal_t to_decimal(const char digit) {
 
 // numerical system
 huge_t parse_str(const char* str, const uint_internal_t num_sys) {
-    size_t len = strlen(str);
+    size_t len = strlen(str) - 1;
     
     huge_t result;
     huge_t tmp;
@@ -484,14 +485,12 @@ int main()
 {
     int m = 0;
     int k = 0;
-    scanf("%d %d", &m, &k);
+    scanf("%d %d\n", &m, &k);
 
-    char input_str[MAX_CHAR_INPUT ];
-    scanf("%s", input_str);
-    input_str[MAX_CHAR_INPUT] = '\0';
+    char input_str[MAX_CHAR_INPUT + 1];
+    fgets(input_str, MAX_CHAR_INPUT + 1, stdin);
     huge_t num = parse_str(input_str, m);
     char* output_str = to_str(num, k);
-
     printf("%s\n", output_str);
     free(output_str);
     huge_t_delete(&num);
