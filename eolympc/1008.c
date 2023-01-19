@@ -11,9 +11,9 @@ RULES:
 */
 // please use just 10-base base
 // don't fuck with binary
-#define UINT_INTERNAL_BASE 1000
-#define HUGE_T_CAPACITY 2000
-#define MAX_CHAR_INPUT 1500
+#define UINT_INTERNAL_BASE 100000000
+#define HUGE_T_CAPACITY 1000
+#define MAX_CHAR_INPUT 1000
 typedef uint64_t uint_internal_t;
 
 struct huge_s
@@ -42,6 +42,7 @@ void __huge_t_ptr_check(const huge_t *const ptr)
         exit(1);
     }
 }
+
 // calls everytime when init method is raised
 void __huge_t_init(huge_t *const huge)
 {
@@ -427,7 +428,7 @@ uint_internal_t to_decimal(const char digit) {
 
 // numerical system
 huge_t parse_str(const char* str, const uint_internal_t num_sys) {
-    size_t len = strlen(str) - 1;
+    size_t len = strlen(str);
     
     huge_t result;
     huge_t tmp;
@@ -485,12 +486,14 @@ int main()
 {
     int m = 0;
     int k = 0;
-    scanf("%d %d\n", &m, &k);
+    scanf("%d %d", &m, &k);
 
     char input_str[MAX_CHAR_INPUT + 1];
-    fgets(input_str, MAX_CHAR_INPUT + 1, stdin);
+    scanf("%s", input_str);
+    input_str[MAX_CHAR_INPUT] = '\0';
     huge_t num = parse_str(input_str, m);
     char* output_str = to_str(num, k);
+
     printf("%s\n", output_str);
     free(output_str);
     huge_t_delete(&num);
