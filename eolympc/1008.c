@@ -404,7 +404,7 @@ uint_internal_t huge_t_calc_module(const huge_t a, const uint_internal_t b)
             remainder = sum % b;
             borrow = remainder * UINT_INTERNAL_BASE;
         }
-        else if (sum < b && sum > 0)
+        else if (sum < b)
         {
             borrow = sum * UINT_INTERNAL_BASE;
             remainder = sum;
