@@ -5,8 +5,8 @@
 int main()
 {
     char buf[BUFFER_SIZE];
-    read(STDIN_FILENO, buf, BUFFER_SIZE);
-
+    size_t bytesred = read(STDIN_FILENO, buf, BUFFER_SIZE);
+    buf[bytesred + 1] = '\0';
     size_t last_char = 0;
     while (buf[last_char] != '\0')
         last_char++;

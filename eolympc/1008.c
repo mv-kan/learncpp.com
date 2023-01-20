@@ -11,7 +11,7 @@ RULES:
 */
 // please use just 10-base base
 // don't fuck with binary
-#define UINT_INTERNAL_BASE 100000000
+#define UINT_INTERNAL_BASE 100
 #define HUGE_T_CAPACITY 1000
 #define MAX_CHAR_INPUT 1000
 typedef uint64_t uint_internal_t;
@@ -42,7 +42,10 @@ void __huge_t_ptr_check(const huge_t *const ptr)
         exit(1);
     }
 }
-
+//invariant 
+// len = length, other things are garbage 
+// len == 1 min 
+// 
 // calls everytime when init method is raised
 void __huge_t_init(huge_t *const huge)
 {
@@ -230,62 +233,6 @@ void huge_t_add_assign(huge_t *const ptr, const huge_t b)
     huge_t_init_zero(&tmp, ptr->len);
 
     huge_t_add(&tmp, *ptr, b);
-
-    huge_t_copy(ptr, &tmp);
-    huge_t_delete(&tmp);
-}
-
-void huge_t_subtract(huge_t *const ptr, const huge_t a, const huge_t b)
-{
-    // basic checks
-    __huge_t_ptr_check(ptr);
-    __huge_t_ptr_check(&a);
-    __huge_t_ptr_check(&b);
-    huge_t_set_zero(ptr);
-    if (a.len != b.len)
-    {
-        printf("huge_t_subtract: a.len != b.len\n");
-        exit(1);
-    }
-    ptr->len = a.len;
-
-    uint_internal_t borrow = 0;
-    for (size_t i = 0; i < ptr->len; i++)
-    {
-        // we need to know when subtract is negative
-        int64_t subtract = ((int64_t)a.chunks[i] - (int64_t)borrow) - (int64_t)b.chunks[i];
-        if (subtract < 0)
-        {
-            // yes borrow here
-            borrow = 1;
-            // borrowed things, here we might have conversion error
-            // but you just gotta disable it, because here it was explicit type conversion
-            uint_internal_t borrowed = ~(uint_internal_t)0 % UINT_INTERNAL_BASE;
-            // this is actually subtraction
-            borrowed += (uint_internal_t)subtract;
-            // assign subtraction of borrowed to result
-            ptr->chunks[i] = borrowed;
-        }
-        else
-        {
-            // no borrow here
-            borrow = 0;
-
-            ptr->chunks[i] = subtract;
-        }
-    }
-}
-
-void huge_t_subtract_assing(huge_t *const ptr, const huge_t b)
-{
-    // basic checks
-    __huge_t_ptr_check(ptr);
-    __huge_t_ptr_check(&b);
-
-    huge_t tmp;
-    huge_t_init_zero(&tmp, ptr->len);
-
-    huge_t_subtract(&tmp, *ptr, b);
 
     huge_t_copy(ptr, &tmp);
     huge_t_delete(&tmp);
@@ -490,6 +437,8 @@ int main()
 
     char input_str[MAX_CHAR_INPUT + 1];
     scanf("%s", input_str);
+
+
     input_str[MAX_CHAR_INPUT] = '\0';
     huge_t num = parse_str(input_str, m);
     char* output_str = to_str(num, k);
