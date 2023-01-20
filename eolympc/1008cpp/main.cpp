@@ -5,6 +5,6 @@
 #define MAX_CHAR_INPUT 1000
 
 int main() {
-    Huge h;
-    
+    Huge h{0, HUGE_CAPACITY};
+
 }

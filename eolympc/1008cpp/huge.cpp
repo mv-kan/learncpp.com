@@ -1,9 +1,8 @@
 #include "huge.h"
-#include <assert>
 
-void Huge::BasicAllocation(const size_t capacity)
+void Huge::BasicAllocation(const std::size_t capacity)
 {
-    assert((capacity == 0) && "capacity cannot be 0");
+    assert(capacity > 0 && "capacity cannot be 0");
 
     mCapacity = capacity;
     mChunks = new UIntInternal[mCapacity];
@@ -11,11 +10,11 @@ void Huge::BasicAllocation(const size_t capacity)
     mChunks[0] = 0;
 }
 
-Huge::Huge(size_t value, const size_t capacity)
+Huge::Huge(std::size_t value, const std::size_t capacity)
 {
     BasicAllocation(capacity);
 
-    size_t len{0};
+    std::size_t len{0};
     do
     {
         mChunks[len] = value % hugeBase;
@@ -27,7 +26,7 @@ Huge::Huge(size_t value, const size_t capacity)
 }
 
 Huge::~Huge() {
-    assert((mChunks) && "mChunks has to be freed by Huge destructor");
+    assert(mChunks && "mChunks has to be freed by Huge destructor");
 
     delete[] mChunks;
     mLen = 0;
@@ -37,7 +36,7 @@ Huge::~Huge() {
 Huge::Huge(const Huge &huge) {
     BasicAllocation(huge.mCapacity);
     
-    for (size_t i = 0; i < huge.mLen; i++)
+    for (std::size_t i = 0; i < huge.mLen; i++)
     {
         mChunks[i] = huge.mChunks[i];
     }
@@ -45,9 +44,9 @@ Huge::Huge(const Huge &huge) {
 }
 
 Huge &Huge::operator=(const Huge &huge) {
-    assert((mCapacity == huge.mCapacity) && "in this program capacity between Huge objects HAVE TO be the same");
+    assert(mCapacity != huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
 
-    for (size_t i = 0; i < huge.mLen; i++)
+    for (std::size_t i = 0; i < huge.mLen; i++)
     {
         mChunks[i] = huge.mChunks[i];
     }
@@ -61,11 +60,11 @@ bool Huge::IsZero() {
 }
 
 void Huge::Add(const Huge &huge) {
-    assert((mCapacity == huge.mCapacity) && "in this program capacity between Huge objects HAVE TO be the same");
+    assert(mCapacity != huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
     // if our object has less lenght than huge then we...
     if (mLen < huge.mLen) {
         // ...extent *this and fill it with zeros 
-        for (size_t i = mLen; i < huge.mLen; i++)
+        for (std::size_t i = mLen; i < huge.mLen; i++)
         {
             mChunks[i] = 0;
         }
@@ -73,13 +72,13 @@ void Huge::Add(const Huge &huge) {
         mLen = huge.mLen;
     }
     UIntInternal remainder{0};
-    for (size_t i = 0; i < mLen; i++)
+    for (std::size_t i = 0; i < mLen; i++)
     {
         // mLen always bigger or equal to huge.mLen 
-        UIntInternal hugeValue{(i < huge.mLen) ? huge.mChunks[i] : 0};
+        UIntInternal hugeValue{(i < huge.mLen) ? huge.mChunks[i] : static_cast<UIntInternal>(0)};
 
         // sum of remainder, huge value and *this
-        UIntInternal sum{mChunks[i] + hugeValue + remainder};
+        UIntInternal sum = mChunks[i] + hugeValue + remainder;
 
         remainder = sum % hugeBase;
 
@@ -89,15 +88,15 @@ void Huge::Add(const Huge &huge) {
     }
 
     if (remainder) {
-        assert((mLen + 1 > mCapacity) && "Overflow, resize is not implemented");
+        assert(mLen + 1 < mCapacity && "Overflow, resize is not implemented");
 
         mChunks[mLen] = remainder;
         mLen++;
     }
 }
 
-void Huge::Multiply(UIntInternal num);
+void Huge::Multiply([[maybe_unused]]UIntInternal num) {}
 
-void Huge::Divide(UIntInternal num);
+void Huge::Divide([[maybe_unused]]UIntInternal num) {}
 
-UIntInternal Huge::CalcModule(UIntInternal num);
+UIntInternal Huge::CalcModule(UIntInternal num) {return num;}

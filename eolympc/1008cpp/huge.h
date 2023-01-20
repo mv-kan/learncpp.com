@@ -21,6 +21,7 @@ function = PascalCase
 */
 
 #include <cstdint>
+#include <cassert>
 
 // base of each UIntInternal chunk
 #define UINT_INTERNAL_BASE 100
@@ -34,11 +35,11 @@ constexpr UIntInternal hugeBase{UINT_INTERNAL_BASE};
 
 class Huge
 {
-    size_t mLen{0};
-    size_t mCapacity{0};
+    std::size_t mLen{0};
+    std::size_t mCapacity{0};
     UIntInternal *mChunks{nullptr};
     // set len to 1 and value of first chunk to 0
-    void BasicAllocation(const size_t capacity);
+    void BasicAllocation(const std::size_t capacity);
 public:
     // rule of 3
     // constructor
@@ -46,7 +47,7 @@ public:
     // assign constructor
     // destructor
 
-    Huge(size_t value, const size_t capacity);
+    Huge(std::size_t value, const std::size_t capacity);
 
     Huge(const Huge& huge);
     
@@ -55,7 +56,7 @@ public:
     ~Huge();
     
     // move constructor
-    
+
 
     // math operations
     bool IsZero();
@@ -67,6 +68,6 @@ public:
     void Divide(UIntInternal num); 
 
     UIntInternal CalcModule(UIntInternal num);
-}
+};
 
 #endif // HUGE_H
