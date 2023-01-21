@@ -1,10 +1,14 @@
 FLAGS =  -std=c++20 -Werror -Wall -Weffc++ -Wextra -Wsign-conversion -pedantic-errors -fdiagnostics-color=always -g 
+FLAGS_NO_SIGN =  -std=c++20 -Werror -Wall -Weffc++ -Wextra -pedantic-errors -fdiagnostics-color=always -g 
 # no -Wsign-conversion
 FLAGS_C = -std=c17 -Werror -Wall -Wextra  -pedantic-errors -fdiagnostics-color=always -g 
 SRC_FILES = $(wildcard ${SRC}/*.cpp)
 ARGS=$()
 build:
 	g++ ${FLAGS} ${SRC_FILES} -o ${SRC}/main.exe
+run_no_sign:
+	@g++ ${FLAGS_NO_SIGN} ${SRC_FILES} -o ${SRC}/main.exe
+	${SRC}/main.exe
 
 run:
 	@g++ ${FLAGS} ${SRC_FILES} -o ${SRC}/main.exe

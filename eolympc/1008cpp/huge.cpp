@@ -1,5 +1,5 @@
 #include "huge.h"
-#include <iostream>
+#include <stdio.h>
 // I cannot see where it was raised, but debugger will save the day
 void Huge::AssertThis() const
 {
@@ -113,9 +113,8 @@ void Huge::Print() const
     AssertThis();
     for (size_t i = 0; i < mLen; i++)
     {
-        std::cout << " " << mChunks[i] << " ";
+        printf(" %zu ", mChunks[i]);
     }
-    std::cout << "\n";
 }
 
 void Huge::Add(const Huge &huge)

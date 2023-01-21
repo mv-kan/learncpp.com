@@ -24,9 +24,9 @@ function = PascalCase
 #include <cassert>
 #include <string>
 // base of each UIntInternal chunk
-#define UINT_INTERNAL_BASE 100
+#define UINT_INTERNAL_BASE 1000000000
 
-using UIntInternal = std::uint16_t;
+using UIntInternal = std::uint64_t;
 
 // internal linkage by default
 // base of Huge class

@@ -1,10 +1,9 @@
-#include <iostream>
 #include <cstring>
-
+#include <stdio.h>
 #include "huge.h"
 
 #define HUGE_CAPACITY 1000
-#define MAX_CHAR_INPUT 1000
+#define MAX_CHAR_INPUT 1200
 
 // Can convert from 2 base to 36 base and everything in between
 class NumberConverter
@@ -55,7 +54,7 @@ public:
 
     static std::string ToStr(const Huge &decimal, const UIntInternal base)
     {
-        char tmp[MAX_CHAR_INPUT * 10];
+        char tmp[MAX_CHAR_INPUT * 2];
         size_t resultLen = 0;
         Huge n{decimal};
 
@@ -82,18 +81,38 @@ public:
     }
 };
 
+size_t getLastDigit(char*str) {
+    size_t nullchar{};
+
+    while (str[nullchar] != '\0') {
+        nullchar++;
+    } 
+    // go back and search
+    for (size_t i = 0; i < nullchar; i++)
+    {
+        char digit{str[nullchar - i - 1]};
+
+        if ((digit >= '0' && digit <= '9') || (digit >= 'A' && digit <= 'Z')) {
+            return nullchar - i - 1;
+        }    
+    }
+    return -1;    
+}
+
 int main()
 {
     int m{};
     int k{};
 
-    std::cin >> m >> k;
+    scanf("%d %d", &m, &k);
+
+    char input_c[MAX_CHAR_INPUT];
+    scanf("%s", input_c);
 
     std::string input{};
-    std::cin >> input;
-
+    input.assign(input_c, input_c + getLastDigit(input_c) + 1);
     Huge num = NumberConverter::ParseStr(input, m);
     std::string str = NumberConverter::ToStr(num, k);
-    
-    std::cout << str << std::endl;
+
+    printf("%s", str.c_str());
 }
