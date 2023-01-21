@@ -1,7 +1,7 @@
 #include "huge.h"
 #include <iostream>
 // I cannot see where it was raised, but debugger will save the day 
-void Huge::AssertThis() {
+void Huge::AssertThis() const {
     assert(mChunks && "to perform task need mChunks not nullptr");
     assert(mCapacity > 0 && "mCapacity is 0, to perform task need mCapacity bigger than 0");
     assert(mLen > 0 && "mLen is 0, to perform task need mLen bigger than 0, because mLen 0 is invalid value");
@@ -44,7 +44,8 @@ Huge::~Huge() {
 
 Huge::Huge(const Huge &huge) {
     BasicAllocation(huge.mCapacity);
-    
+    huge.AssertThis();
+
     for (std::size_t i = 0; i < huge.mLen; i++)
     {
         mChunks[i] = huge.mChunks[i];
@@ -53,8 +54,9 @@ Huge::Huge(const Huge &huge) {
 }
 
 Huge &Huge::operator=(const Huge &huge) {
+    huge.AssertThis();
     assert(mCapacity == huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
-
+    
     for (std::size_t i = 0; i < huge.mLen; i++)
     {
         mChunks[i] = huge.mChunks[i];
@@ -92,13 +94,17 @@ Huge& Huge::operator=(Huge&& source) {
     return *this;
 }
 // math operations
-bool Huge::IsZero() {
+bool Huge::IsZero() const{
+    AssertThis();
+
     return (mLen == 1 && mChunks[0] == 0);
 }
 
 void Huge::Add(const Huge &huge) {
     assert(mCapacity != huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
-    
+    AssertThis();
+    huge.AssertThis();
+
     // if our object has less lenght than huge then we...
     if (mLen < huge.mLen) {
         // ...extent *this and fill it with zeros 
@@ -133,7 +139,7 @@ void Huge::Add(const Huge &huge) {
     }
 }
 
-void Huge::Print() {
+void Huge::Print() const {
     AssertThis();
     for (size_t i = 0; i < mLen; i++)
     {
@@ -146,4 +152,4 @@ void Huge::Multiply([[maybe_unused]]UIntInternal num) {}
 
 void Huge::Divide([[maybe_unused]]UIntInternal num) {}
 
-UIntInternal Huge::CalcModule(UIntInternal num) {return num;}
+UIntInternal Huge::CalcModule(UIntInternal num) const {return num;}

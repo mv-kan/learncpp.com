@@ -42,7 +42,7 @@ class Huge
     void BasicAllocation(const std::size_t capacity);
 
     // assert itself, i.e. if any of methods are called *this has to be not empty
-    void AssertThis();
+    void AssertThis() const;
 public:
     // rule of 3
     // constructor
@@ -65,10 +65,10 @@ public:
     Huge& operator=(Huge&& source);
 
     // prints in reverse, least significant bit in left
-    void Print();
+    void Print() const;
 
     // math operations
-    bool IsZero();
+    bool IsZero() const;
 
     void Add(const Huge& huge); 
 
@@ -76,7 +76,7 @@ public:
 
     void Divide(UIntInternal num); 
 
-    UIntInternal CalcModule(UIntInternal num);
+    UIntInternal CalcModule(UIntInternal num) const;
 };
 
 #endif // HUGE_H
