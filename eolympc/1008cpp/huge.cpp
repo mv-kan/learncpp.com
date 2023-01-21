@@ -218,7 +218,8 @@ void Huge::Divide(UIntInternal num)
             break;
         }
     }
-    mLen = actualLen;
+    // if zero then keep len to 1 
+    mLen = actualLen ? actualLen : 1;
 }
 
 UIntInternal Huge::CalcModule(UIntInternal num) const
