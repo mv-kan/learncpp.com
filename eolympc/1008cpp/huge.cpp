@@ -26,9 +26,11 @@ Huge::Huge(std::size_t value, const std::size_t capacity)
 }
 
 Huge::~Huge() {
-    assert(mChunks && "mChunks has to be freed by Huge destructor");
-
-    delete[] mChunks;
+    // no assert because we implemented move constructor
+    // assert(mChunks && "mChunks has to be freed by Huge destructor");
+    if (mChunks) {
+        delete[] mChunks;
+    }
     mLen = 0;
     mCapacity = 0;
 }
@@ -44,7 +46,7 @@ Huge::Huge(const Huge &huge) {
 }
 
 Huge &Huge::operator=(const Huge &huge) {
-    assert(mCapacity != huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
+    assert(mCapacity == huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
 
     for (std::size_t i = 0; i < huge.mLen; i++)
     {
@@ -54,6 +56,34 @@ Huge &Huge::operator=(const Huge &huge) {
     return *this;
 }
 
+// move constructor
+// QUESTION why double reference?
+Huge::Huge(Huge&& source) {
+    assert(source.mCapacity > 0);
+
+    mChunks = source.mChunks;
+    mLen = source.mLen;
+    mCapacity = source.mCapacity;
+
+    source.mChunks = nullptr;
+    source.mLen = 0;
+    source.mCapacity = 0;
+}
+
+// move assignment
+Huge& Huge::operator=(Huge&& source) {
+    assert(source.mCapacity > 0);
+
+    mChunks = source.mChunks;
+    mLen = source.mLen;
+    mCapacity = source.mCapacity;
+
+    source.mChunks = nullptr;
+    source.mLen = 0;
+    source.mCapacity = 0;
+
+    return *this;
+}
 // math operations
 bool Huge::IsZero() {
     return (mLen == 1 && mChunks[0] == 0);

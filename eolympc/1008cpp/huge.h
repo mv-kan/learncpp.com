@@ -55,8 +55,11 @@ public:
 
     ~Huge();
     
-    // move constructor
+    // move constructor and move assignment
 
+    Huge(Huge&& source);
+
+    Huge& operator=(Huge&& source);
 
     // math operations
     bool IsZero();

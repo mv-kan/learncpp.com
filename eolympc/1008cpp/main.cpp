@@ -5,6 +5,9 @@
 #define MAX_CHAR_INPUT 1000
 
 int main() {
-    Huge h{0, HUGE_CAPACITY};
+    Huge h{10, HUGE_CAPACITY};
+    Huge h1{h};
+
+    h = std::move(h1);
 
 }
