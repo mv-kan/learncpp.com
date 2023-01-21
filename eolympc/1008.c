@@ -10,7 +10,6 @@ RULES:
 2. Every huge_t object has capacity of HUGE_T_CAPACITY
 */
 // please use just 10-base base
-// don't fuck with binary
 #define UINT_INTERNAL_BASE 100
 #define HUGE_T_CAPACITY 1000
 #define MAX_CHAR_INPUT 1000

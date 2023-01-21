@@ -22,7 +22,7 @@ function = PascalCase
 
 #include <cstdint>
 #include <cassert>
-
+#include <string>
 // base of each UIntInternal chunk
 #define UINT_INTERNAL_BASE 100
 
@@ -40,6 +40,9 @@ class Huge
     UIntInternal *mChunks{nullptr};
     // set len to 1 and value of first chunk to 0
     void BasicAllocation(const std::size_t capacity);
+
+    // assert itself, i.e. if any of methods are called *this has to be not empty
+    void AssertThis();
 public:
     // rule of 3
     // constructor
@@ -60,6 +63,9 @@ public:
     Huge(Huge&& source);
 
     Huge& operator=(Huge&& source);
+
+    // prints in reverse, least significant bit in left
+    void Print();
 
     // math operations
     bool IsZero();

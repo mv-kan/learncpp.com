@@ -1,4 +1,11 @@
 #include "huge.h"
+#include <iostream>
+// I cannot see where it was raised, but debugger will save the day 
+void Huge::AssertThis() {
+    assert(mChunks && "to perform task need mChunks not nullptr");
+    assert(mCapacity > 0 && "mCapacity is 0, to perform task need mCapacity bigger than 0");
+    assert(mLen > 0 && "mLen is 0, to perform task need mLen bigger than 0, because mLen 0 is invalid value");
+}
 
 void Huge::BasicAllocation(const std::size_t capacity)
 {
@@ -91,6 +98,7 @@ bool Huge::IsZero() {
 
 void Huge::Add(const Huge &huge) {
     assert(mCapacity != huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
+    
     // if our object has less lenght than huge then we...
     if (mLen < huge.mLen) {
         // ...extent *this and fill it with zeros 
@@ -123,6 +131,15 @@ void Huge::Add(const Huge &huge) {
         mChunks[mLen] = remainder;
         mLen++;
     }
+}
+
+void Huge::Print() {
+    AssertThis();
+    for (size_t i = 0; i < mLen; i++)
+    {
+        std::cout << " " << mChunks[i] << " ";
+    }
+    std::cout << "\n";
 }
 
 void Huge::Multiply([[maybe_unused]]UIntInternal num) {}
