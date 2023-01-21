@@ -163,7 +163,7 @@ void Huge::Add(const Huge &huge)
 }
 
 // if base is too big then calculation may overflow internal variable, leading to wrong results
-void Huge::Multiply(UIntInternal num) 
+void Huge::Multiply(UIntInternal num)
 {
     AssertThis();
 
@@ -178,7 +178,8 @@ void Huge::Multiply(UIntInternal num)
     }
 
     // num * mChunks[i] cannot overflow carry to the point we need to do iteration
-    if (carry > 0) {
+    if (carry > 0)
+    {
         assert(mLen != mCapacity && "overflow will occur!!!");
 
         mChunks[mLen] = carry;
@@ -186,6 +187,38 @@ void Huge::Multiply(UIntInternal num)
     }
 }
 
-void Huge::Divide([[maybe_unused]] UIntInternal num) {}
+void Huge::Divide(UIntInternal num)
+{
+    AssertThis();
+
+    UIntInternal borrow{0};
+
+    for (size_t i = 0; i < mLen; i++)
+    {
+        // reversed index
+        size_t index{mLen - i - 1};
+
+        // with cusve braces init compiler throws a lot of warnings
+        UIntInternal sum = borrow + mChunks[index];
+
+        UIntInternal division = sum / num;
+        UIntInternal remainder = sum % num;
+
+        mChunks[index] = division;
+
+        borrow = remainder * hugeBase;
+    }
+    // keep len to its required minimum
+    UIntInternal actualLen{};
+    for (size_t i = 0; i < mLen; i++)
+    {
+        if (mChunks[mLen - i - 1] != 0)
+        {
+            actualLen = mLen - i;
+            break;
+        }
+    }
+    mLen = actualLen;
+}
 
 UIntInternal Huge::CalcModule(UIntInternal num) const { return num; }

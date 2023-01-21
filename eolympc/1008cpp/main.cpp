@@ -5,14 +5,8 @@
 #define MAX_CHAR_INPUT 1000
 
 int main() {
-    Huge h{10192837192, HUGE_CAPACITY};
-    Huge h1{h};
+    Huge h{1000000, HUGE_CAPACITY};
 
-    // h = std::move(h1);
-    h.Print();
-    h1.Print();
-    h.Add(h1);
-    h.Print();
-    h.Multiply(2);
+    h.Divide(36);
     h.Print();
 }
