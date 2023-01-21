@@ -11,4 +11,6 @@ int main() {
     // h = std::move(h1);
     h.Print();
     h1.Print();
+    h.Add(h1);
+    h.Print();
 }

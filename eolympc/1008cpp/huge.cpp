@@ -101,7 +101,7 @@ bool Huge::IsZero() const{
 }
 
 void Huge::Add(const Huge &huge) {
-    assert(mCapacity != huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
+    assert(mCapacity == huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
     AssertThis();
     huge.AssertThis();
 
@@ -124,7 +124,8 @@ void Huge::Add(const Huge &huge) {
         // sum of remainder, huge value and *this
         UIntInternal sum = mChunks[i] + hugeValue + remainder;
 
-        remainder = sum % hugeBase;
+        mChunks[i] = sum % hugeBase;
+        remainder = sum / hugeBase;
 
         // if no remainder left and huge.mLen is already walked thru then we calculated addition
         // we can return here
