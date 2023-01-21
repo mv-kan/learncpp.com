@@ -1,8 +1,12 @@
 #include <cstring>
+#include <cstdint>
+#include <cassert>
+#include <string>
 #include <stdio.h>
+
 #if !defined(HUGE_H)
 #define HUGE_H
-
+#define NDEBUG
 /*
 Chunk means just one of whole thing, so Chunks just the whole huge number we store
 
@@ -22,9 +26,7 @@ variables = camelCase
 function = PascalCase
 */
 
-#include <cstdint>
-#include <cassert>
-#include <string>
+
 // base of each UIntInternal chunk
 #define UINT_INTERNAL_BASE 1000000000
 
@@ -84,7 +86,6 @@ public:
 
 #endif // HUGE_H
 
-#include <stdio.h>
 // I cannot see where it was raised, but debugger will save the day
 void Huge::AssertThis() const
 {
