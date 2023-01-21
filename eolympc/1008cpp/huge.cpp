@@ -221,4 +221,23 @@ void Huge::Divide(UIntInternal num)
     mLen = actualLen;
 }
 
-UIntInternal Huge::CalcModule(UIntInternal num) const { return num; }
+UIntInternal Huge::CalcModule(UIntInternal num) const 
+{
+    AssertThis();
+
+    UIntInternal borrow{};
+    UIntInternal remainder{};
+    for (size_t i = 0; i < mLen; i++)
+    {
+        // reversed index
+        size_t index{mLen - i - 1};
+
+        // with cusve braces init compiler throws a lot of warnings
+        UIntInternal sum = borrow + mChunks[index];
+
+        remainder = sum % num;
+
+        borrow = remainder * hugeBase;
+    }
+    return remainder;
+}

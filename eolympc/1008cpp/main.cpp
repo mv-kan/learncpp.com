@@ -9,4 +9,5 @@ int main() {
 
     h.Divide(36);
     h.Print();
+    std::cout << h.CalcModule(36);
 }
