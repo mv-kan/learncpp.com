@@ -3,7 +3,7 @@
 #include "huge.h"
 
 #define HUGE_CAPACITY 1000
-#define MAX_CHAR_INPUT 1200
+#define MAX_CHAR_INPUT 1500
 
 // Can convert from 2 base to 36 base and everything in between
 class NumberConverter
