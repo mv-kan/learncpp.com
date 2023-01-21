@@ -2,7 +2,7 @@
 #define HUGE_H
 
 /*
-Chunk means just one of whole thing, so Chunks just the whole huge number we store 
+Chunk means just one of whole thing, so Chunks just the whole huge number we store
 
 Invariants
 
@@ -30,7 +30,7 @@ using UIntInternal = std::uint16_t;
 
 // internal linkage by default
 // base of Huge class
-// Base here means what is the max value we can store in one chunk 
+// Base here means what is the max value we can store in one chunk
 constexpr UIntInternal hugeBase{UINT_INTERNAL_BASE};
 
 class Huge
@@ -43,6 +43,7 @@ class Huge
 
     // assert itself, i.e. if any of methods are called *this has to be not empty
     void AssertThis() const;
+
 public:
     // rule of 3
     // constructor
@@ -52,17 +53,17 @@ public:
 
     Huge(std::size_t value, const std::size_t capacity);
 
-    Huge(const Huge& huge);
-    
-    Huge& operator=(const Huge& huge);
+    Huge(const Huge &huge);
+
+    Huge &operator=(const Huge &huge);
 
     ~Huge();
-    
+
     // move constructor and move assignment
 
-    Huge(Huge&& source);
+    Huge(Huge &&source);
 
-    Huge& operator=(Huge&& source);
+    Huge &operator=(Huge &&source);
 
     // prints in reverse, least significant bit in left
     void Print() const;
@@ -70,11 +71,11 @@ public:
     // math operations
     bool IsZero() const;
 
-    void Add(const Huge& huge); 
+    void Add(const Huge &huge);
 
     void Multiply(UIntInternal num);
 
-    void Divide(UIntInternal num); 
+    void Divide(UIntInternal num);
 
     UIntInternal CalcModule(UIntInternal num) const;
 };

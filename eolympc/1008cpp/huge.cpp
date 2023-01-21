@@ -221,7 +221,7 @@ void Huge::Divide(UIntInternal num)
     mLen = actualLen;
 }
 
-UIntInternal Huge::CalcModule(UIntInternal num) const 
+UIntInternal Huge::CalcModule(UIntInternal num) const
 {
     AssertThis();
 
