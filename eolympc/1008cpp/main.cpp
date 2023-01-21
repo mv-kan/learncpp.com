@@ -13,4 +13,6 @@ int main() {
     h1.Print();
     h.Add(h1);
     h.Print();
+    h.Multiply(2);
+    h.Print();
 }

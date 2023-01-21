@@ -1,7 +1,8 @@
 #include "huge.h"
 #include <iostream>
-// I cannot see where it was raised, but debugger will save the day 
-void Huge::AssertThis() const {
+// I cannot see where it was raised, but debugger will save the day
+void Huge::AssertThis() const
+{
     assert(mChunks && "to perform task need mChunks not nullptr");
     assert(mCapacity > 0 && "mCapacity is 0, to perform task need mCapacity bigger than 0");
     assert(mLen > 0 && "mLen is 0, to perform task need mLen bigger than 0, because mLen 0 is invalid value");
@@ -32,17 +33,20 @@ Huge::Huge(std::size_t value, const std::size_t capacity)
     mLen = len;
 }
 
-Huge::~Huge() {
+Huge::~Huge()
+{
     // no assert because we implemented move constructor
     // assert(mChunks && "mChunks has to be freed by Huge destructor");
-    if (mChunks) {
+    if (mChunks)
+    {
         delete[] mChunks;
     }
     mLen = 0;
     mCapacity = 0;
 }
 
-Huge::Huge(const Huge &huge) {
+Huge::Huge(const Huge &huge)
+{
     BasicAllocation(huge.mCapacity);
     huge.AssertThis();
 
@@ -53,10 +57,11 @@ Huge::Huge(const Huge &huge) {
     mLen = huge.mLen;
 }
 
-Huge &Huge::operator=(const Huge &huge) {
+Huge &Huge::operator=(const Huge &huge)
+{
     huge.AssertThis();
     assert(mCapacity == huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
-    
+
     for (std::size_t i = 0; i < huge.mLen; i++)
     {
         mChunks[i] = huge.mChunks[i];
@@ -67,7 +72,8 @@ Huge &Huge::operator=(const Huge &huge) {
 
 // move constructor
 // QUESTION why double reference?
-Huge::Huge(Huge&& source) {
+Huge::Huge(Huge &&source)
+{
     assert(source.mCapacity > 0);
 
     mChunks = source.mChunks;
@@ -80,7 +86,8 @@ Huge::Huge(Huge&& source) {
 }
 
 // move assignment
-Huge& Huge::operator=(Huge&& source) {
+Huge &Huge::operator=(Huge &&source)
+{
     assert(source.mCapacity > 0);
 
     mChunks = source.mChunks;
@@ -94,20 +101,33 @@ Huge& Huge::operator=(Huge&& source) {
     return *this;
 }
 // math operations
-bool Huge::IsZero() const{
+bool Huge::IsZero() const
+{
     AssertThis();
 
     return (mLen == 1 && mChunks[0] == 0);
 }
 
-void Huge::Add(const Huge &huge) {
+void Huge::Print() const
+{
+    AssertThis();
+    for (size_t i = 0; i < mLen; i++)
+    {
+        std::cout << " " << mChunks[i] << " ";
+    }
+    std::cout << "\n";
+}
+
+void Huge::Add(const Huge &huge)
+{
     assert(mCapacity == huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
     AssertThis();
     huge.AssertThis();
 
     // if our object has less lenght than huge then we...
-    if (mLen < huge.mLen) {
-        // ...extent *this and fill it with zeros 
+    if (mLen < huge.mLen)
+    {
+        // ...extent *this and fill it with zeros
         for (std::size_t i = mLen; i < huge.mLen; i++)
         {
             mChunks[i] = 0;
@@ -118,7 +138,7 @@ void Huge::Add(const Huge &huge) {
     UIntInternal remainder{0};
     for (std::size_t i = 0; i < mLen; i++)
     {
-        // mLen always bigger or equal to huge.mLen 
+        // mLen always bigger or equal to huge.mLen
         UIntInternal hugeValue{(i < huge.mLen) ? huge.mChunks[i] : static_cast<UIntInternal>(0)};
 
         // sum of remainder, huge value and *this
@@ -129,10 +149,12 @@ void Huge::Add(const Huge &huge) {
 
         // if no remainder left and huge.mLen is already walked thru then we calculated addition
         // we can return here
-        if (!remainder && i >= huge.mLen) return;
+        if (!remainder && i >= huge.mLen)
+            return;
     }
 
-    if (remainder) {
+    if (remainder)
+    {
         assert(mLen + 1 < mCapacity && "Overflow, resize is not implemented");
 
         mChunks[mLen] = remainder;
@@ -140,17 +162,30 @@ void Huge::Add(const Huge &huge) {
     }
 }
 
-void Huge::Print() const {
+// if base is too big then calculation may overflow internal variable, leading to wrong results
+void Huge::Multiply(UIntInternal num) 
+{
     AssertThis();
+
+    UIntInternal carry{0};
+
     for (size_t i = 0; i < mLen; i++)
     {
-        std::cout << " " << mChunks[i] << " ";
+        size_t multiplied = static_cast<size_t>(mChunks[i]) * num + carry;
+
+        mChunks[i] = multiplied % hugeBase;
+        carry = multiplied / hugeBase;
     }
-    std::cout << "\n";
+
+    // num * mChunks[i] cannot overflow carry to the point we need to do iteration
+    if (carry > 0) {
+        assert(mLen != mCapacity && "overflow will occur!!!");
+
+        mChunks[mLen] = carry;
+        mLen++;
+    }
 }
 
-void Huge::Multiply([[maybe_unused]]UIntInternal num) {}
+void Huge::Divide([[maybe_unused]] UIntInternal num) {}
 
-void Huge::Divide([[maybe_unused]]UIntInternal num) {}
-
-UIntInternal Huge::CalcModule(UIntInternal num) const {return num;}
+UIntInternal Huge::CalcModule(UIntInternal num) const { return num; }
