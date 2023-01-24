@@ -1,5 +1,6 @@
 #include "huge.h"
 #include <stdio.h>
+#include<limits>
 // I cannot see where it was raised, but debugger will save the day
 void Huge::AssertThis() const
 {
@@ -165,29 +166,23 @@ void Huge::Subtract(const Huge &huge)
     assert(huge.mLen <= mLen);
 
     UIntInternal borrow = 0;
-    for (size_t i = 0; i < huge.mLen; i++)
+    for (size_t i = 0; i < huge.mLen || borrow != 0; i++)
     {
         // we need to know when subtract is negative
-        int64_t subtract = ((int64_t)mChunks[i] - (int64_t)borrow) - (int64_t)huge.mChunks[i];
-        if (subtract < 0)
-        {
-            // yes borrow here
-            borrow = 1;
-            // borrowed things, here we might have conversion error
-            // but you just gotta disable it, because here it was explicit type conversion
-            UIntInternal borrowed = ~(UIntInternal)0 % hugeBase;
-            // this is actually subtraction
-            borrowed += (UIntInternal)subtract;
-            // assign subtraction of borrowed to result
-            mChunks[i] = borrowed;
-        }
-        else
-        {
-            // no borrow here
-            borrow = 0;
+        int64_t subtract = (int64_t)mChunks[i] - (int64_t)borrow;
+        if (i < huge.mLen)
+            subtract -= huge.mChunks[i]; 
 
-            mChunks[i] = subtract;
-        }
+        borrow = subtract < 0 ? 1 : 0;
+        
+        // borrowed things, here we might have conversion error
+        UIntInternal borrowed = hugeBase * borrow;
+        
+        // this is subtraction or addition depending on sign of subtract
+        borrowed += subtract;
+
+        // assign subtraction of borrowed to result
+        mChunks[i] = borrowed;
     }
     // keep len to its required minimum
     UIntInternal actualLen{};

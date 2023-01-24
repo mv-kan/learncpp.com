@@ -76,11 +76,21 @@ public:
     }
     static void PrintHuge(const Huge &huge)
     {
+        char buf[MAX_CHAR_INPUT];
+        size_t ibuf{};
         size_t len{huge.GetLen()};
         for (size_t i = 0; i < len; i++)
         {
-            size_t irev{len - 1 - i};
-            printf("%zu", huge.GetAt(irev));
+            for (UIntInternal n = 10; n <= hugeBase; n *= 10)
+            {
+                // scrap digit from n
+                buf[ibuf] = ToChar(huge.GetAt(i) % n / (n / 10));
+                ibuf++;
+            }
+        }
+        for (size_t i = 0; i < ibuf + 1; i++)
+        {
+            printf("%c", buf[ibuf - 1 - i]);
         }
         printf("\n");        
     }
