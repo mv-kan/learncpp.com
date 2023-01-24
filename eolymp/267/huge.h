@@ -22,8 +22,10 @@ function = PascalCase
 
 #include <cstdint>
 #include <cassert>
+#include <stddef.h>
 // base of each UIntInternal chunk
-#define UINT_INTERNAL_BASE 1000000000
+// #define UINT_INTERNAL_BASE 1000000000
+#define UINT_INTERNAL_BASE 10
 
 using UIntInternal = std::uint64_t;
 
@@ -70,13 +72,19 @@ public:
     // math operations
     bool IsZero() const;
 
-    void Add(const Huge &huge);
+    // returns -1 if this is bigger
+    // returns 0 if equal
+    // returns 1 if huge is bigger
+    int Compare(const Huge& huge) const;
+    // get chunk at index
+    UIntInternal GetAt(size_t i) const;
 
-    void Multiply(UIntInternal num);
+    // set chunk at index
+    void SetAt(size_t i, UIntInternal value);
 
-    void Divide(UIntInternal num);
+    size_t GetLen() const {return mLen;}
 
-    UIntInternal CalcModule(UIntInternal num) const;
+    void Subtract(const Huge& huge);
 };
 
 #endif // HUGE_H

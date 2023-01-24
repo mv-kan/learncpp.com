@@ -17,7 +17,9 @@ run:
 run_one: 
 	@g++ ${FLAGS} ${SRC} -o $(dir ${SRC})/main.exe
 	$(dir ${SRC})/main.exe
-
+run_one_no_sign: 
+	@g++ ${FLAGS_NO_SIGN} ${SRC} -o $(dir ${SRC})/main.exe
+	$(dir ${SRC})/main.exe
 run_one_yolo $(SRC):
 	echo $(SRC)
 	@g++ ${SRC} -o $(dir ${SRC})/main.exe
