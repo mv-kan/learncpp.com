@@ -2,7 +2,7 @@
 #include <stdio.h>
 #if !defined(HUGE_H)
 #define HUGE_H
-
+#define NDEBUG
 /*
 Chunk means just one of whole thing, so Chunks just the whole huge number we store
 
@@ -362,11 +362,31 @@ public:
     }
     static void PrintHuge(const Huge &huge)
     {
+        char buf[MAX_CHAR_INPUT];
+        size_t bufSize{};
         size_t len{huge.GetLen()};
         for (size_t i = 0; i < len; i++)
         {
-            size_t irev{len - 1 - i};
-            printf("%zu", huge.GetAt(irev));
+            for (UIntInternal n = 10; n <= hugeBase; n *= 10)
+            {
+                // scrap digit from n
+                UIntInternal digit = huge.GetAt(i) % n / (n / 10);
+                buf[bufSize] = ToChar(digit);
+                bufSize++;
+            }
+        }
+        // trim from zeros in the end
+        while (bufSize > 1)
+        {
+            if (buf[bufSize - 1] == '0')
+                bufSize--;
+            else
+                break;
+        }
+
+        for (size_t i = 0; i < bufSize; i++)
+        {
+            printf("%c", buf[bufSize - 1 - i]);
         }
         printf("\n");
     }

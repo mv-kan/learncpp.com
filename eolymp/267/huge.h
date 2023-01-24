@@ -24,8 +24,8 @@ function = PascalCase
 #include <cassert>
 #include <stddef.h>
 // base of each UIntInternal chunk
-// #define UINT_INTERNAL_BASE 1000000000
-#define UINT_INTERNAL_BASE 10
+#define UINT_INTERNAL_BASE 1000000000
+// #define UINT_INTERNAL_BASE 10
 
 using UIntInternal = std::uint64_t;
 

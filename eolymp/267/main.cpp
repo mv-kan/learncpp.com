@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "huge.h"
 
-#define HUGE_CAPACITY 100000
+#define HUGE_CAPACITY 5000
 #define MAX_CHAR_INPUT 15000
 
 class NumConverter
@@ -77,22 +77,32 @@ public:
     static void PrintHuge(const Huge &huge)
     {
         char buf[MAX_CHAR_INPUT];
-        size_t ibuf{};
+        size_t bufSize{};
         size_t len{huge.GetLen()};
         for (size_t i = 0; i < len; i++)
         {
             for (UIntInternal n = 10; n <= hugeBase; n *= 10)
             {
                 // scrap digit from n
-                buf[ibuf] = ToChar(huge.GetAt(i) % n / (n / 10));
-                ibuf++;
+                UIntInternal digit = huge.GetAt(i) % n / (n / 10);
+                buf[bufSize] = ToChar(digit);
+                bufSize++;
             }
         }
-        for (size_t i = 0; i < ibuf + 1; i++)
+        // trim from zeros in the end
+        while (bufSize > 1)
         {
-            printf("%c", buf[ibuf - 1 - i]);
+            if (buf[bufSize - 1] == '0')
+                bufSize--;
+            else
+                break;
         }
-        printf("\n");        
+
+        for (size_t i = 0; i < bufSize; i++)
+        {
+            printf("%c", buf[bufSize - 1 - i]);
+        }
+        printf("\n");
     }
 };
 
@@ -108,7 +118,6 @@ int main()
     Huge b = NumConverter::ParseStr(buf);
 
     a.Subtract(b);
-    
-    NumConverter::PrintHuge(a);
 
+    NumConverter::PrintHuge(a);
 }
