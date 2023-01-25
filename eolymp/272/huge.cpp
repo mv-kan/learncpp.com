@@ -19,6 +19,20 @@ void Huge::BasicAllocation(const std::size_t capacity)
     mChunks[0] = 0;
 }
 
+void Huge::Set(size_t value)
+{
+    std::size_t len{0};
+    do
+    {
+        mChunks[len] = value % hugeBase;
+        ++len;
+        value /= hugeBase;
+    } while (value);
+
+    mLen = len;
+    assert(mLen <= mCapacity);
+}
+
 Huge::Huge(std::size_t value, const std::size_t capacity)
 {
     BasicAllocation(capacity);
@@ -242,17 +256,18 @@ void Huge::Subtract(const Huge &huge)
     mLen = actualLen ? actualLen : 1;
 }
 
-// actually this rotates it to right, but left rotation usually is something that result in bigger number 
+// actually this rotates it to right, but left rotation usually is something that result in bigger number
 void Huge::ChunkShiftLeft()
 {
     AssertThis();
     assert(mLen + 1 < mCapacity);
-    memmove(mChunks + 1, mChunks, sizeof(UIntInternal) * (mLen));
+    memmove(mChunks + 1, mChunks, sizeof(UIntInternal) * (mLen - 1));
     mLen++;
     mChunks[0] = 0;
 }
 // actually this rotates it to the left, but left rotation usually is something that result in bigger number
-void Huge::ChunkShiftRight() {
+void Huge::ChunkShiftRight()
+{
     AssertThis();
     memmove(mChunks, mChunks + 1, sizeof(UIntInternal) * (mLen - 1));
     mChunks[mLen - 1] = 0;
@@ -263,4 +278,48 @@ void Huge::ChunkShiftRight() {
 void Huge::Multiply(const Huge &huge)
 {
     huge.Print();
+}
+
+void Huge::KaratsubaMultiply(Huge *ptr, const HugeView &a, const HugeView &b)
+{
+    size_t alen{a.GetLen()};
+    size_t blen{b.GetLen()};
+    if (blen == 1 && alen == 1)
+    {
+        // basic multiplication case
+        ptr->Set(a.GetAt(a.GetBegin()) * b.GetAt(b.GetBegin()));
+        return;
+    }
+
+    // calculate middle point of number
+    // middle point based on biggest len
+    size_t m{alen > blen ? (alen + 1) / 2 : (blen + 1) / 2};
+
+    HugeView alow, ahigh, blow, bhigh;
+
+    // split a and b num into highs and lows at @m point
+    a.SplitAt(&alow, &ahigh, m);
+    b.SplitAt(&blow, &bhigh, m);
+
+    // calculate z
+    Huge z0{0, (ptr->mCapacity + 1) / 2};
+    Huge z1{0, (ptr->mCapacity + 1) / 2};
+    Huge z2{0, (ptr->mCapacity + 1) / 2};
+
+    KaratsubaMultiply(z0, alow, blow);
+    // implement plust for HugeView
+    KaratsubaMultiply(z1, alow + ahigh, blow + bhigh);
+    KaratsubaMultiply(z2, ahigh, bhigh);
+
+    z1.Subtract(z0);
+    z1.Subtract(z2);
+
+    for (size_t i = 0; i < m; i++)
+    {
+        z1.ChunkShiftLeft();
+        z2.ChunkShiftLeft();
+        z2.ChunkShiftLeft();
+    }
+
+    return z2 + z1 + z0;
 }

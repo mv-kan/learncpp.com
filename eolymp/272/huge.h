@@ -53,7 +53,10 @@ class Huge
 
     void ChunkShiftRight();
 
-    static Huge Karatsuba(const HugeView &a, const HugeView &b);
+    // recursion multiply
+    static void KaratsubaMultiply(Huge* ptr, const HugeView &a, const HugeView &b);
+
+    void Set(size_t value);
 
 public:
     // rule of 3
