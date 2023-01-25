@@ -1,6 +1,7 @@
 #include <cstring>
 #include <stdio.h>
 #include "huge.h"
+#include "huge_view.h"
 
 #define HUGE_CAPACITY 5000
 #define MAX_CHAR_INPUT 15000
@@ -117,17 +118,13 @@ int main()
     scanf("%s", buf);
     Huge b = NumConverter::ParseStr(buf);
 
-    a.ChunkShiftLeft();
+    HugeView av{&a, 0, 1};
 
-    a.Print();
+    for (size_t i = av.GetBegin(); i < av.GetEnd() + 1; i++)
+    {
+        printf(" %zu ", av.GetAt(i));
+    }
     printf("\n");
-    NumConverter::PrintHuge(a);
 
-    printf("\n");
-    printf("\n");
-    a.ChunkShiftRight();
-
-    a.Print();
-    printf("\n");
-    NumConverter::PrintHuge(a);
+    // NumConverter::PrintHuge(a);
 }
