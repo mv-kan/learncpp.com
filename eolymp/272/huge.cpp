@@ -158,6 +158,50 @@ void Huge::SetAt(size_t i, UIntInternal value)
     mChunks[i] = value;
 }
 
+void Huge::Add(const Huge &huge)
+{
+    assert(mCapacity == huge.mCapacity && "in this program capacity between Huge objects HAVE TO be the same");
+    AssertThis();
+    huge.AssertThis();
+
+    // if our object has less lenght than huge then we...
+    if (mLen < huge.mLen)
+    {
+        // ...extent *this and fill it with zeros
+        for (std::size_t i = mLen; i < huge.mLen; i++)
+        {
+            mChunks[i] = 0;
+        }
+        // we adding so *this object is going to have huge lenght (if it is bigger)
+        mLen = huge.mLen;
+    }
+    UIntInternal remainder{0};
+    for (std::size_t i = 0; i < mLen; i++)
+    {
+        // mLen always bigger or equal to huge.mLen
+        UIntInternal hugeValue{(i < huge.mLen) ? huge.mChunks[i] : static_cast<UIntInternal>(0)};
+
+        // sum of remainder, huge value and *this
+        UIntInternal sum = mChunks[i] + hugeValue + remainder;
+
+        mChunks[i] = sum % hugeBase;
+        remainder = sum / hugeBase;
+
+        // if no remainder left and huge.mLen is already walked thru then we calculated addition
+        // we can return here
+        if (!remainder && i >= huge.mLen)
+            return;
+    }
+
+    if (remainder)
+    {
+        assert(mLen + 1 < mCapacity && "Overflow, resize is not implemented");
+
+        mChunks[mLen] = remainder;
+        mLen++;
+    }
+}
+
 void Huge::Subtract(const Huge &huge)
 {
     AssertThis();
@@ -196,4 +240,27 @@ void Huge::Subtract(const Huge &huge)
     }
     // if zero then keep len to 1
     mLen = actualLen ? actualLen : 1;
+}
+
+// actually this rotates it to right, but left rotation usually is something that result in bigger number 
+void Huge::ChunkShiftLeft()
+{
+    AssertThis();
+    assert(mLen + 1 < mCapacity);
+    memmove(mChunks + 1, mChunks, sizeof(UIntInternal) * (mLen));
+    mLen++;
+    mChunks[0] = 0;
+}
+// actually this rotates it to the left, but left rotation usually is something that result in bigger number
+void Huge::ChunkShiftRight() {
+    AssertThis();
+    memmove(mChunks, mChunks + 1, sizeof(UIntInternal) * (mLen - 1));
+    mChunks[mLen - 1] = 0;
+    if (mLen > 1)
+        mLen--;
+}
+
+void Huge::Multiply(const Huge &huge)
+{
+    huge.Print();
 }

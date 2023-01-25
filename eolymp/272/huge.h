@@ -22,6 +22,7 @@ function = PascalCase
 
 #include <cstdint>
 #include <cassert>
+#include <string.h>
 #include <stddef.h>
 // base of each UIntInternal chunk
 #define UINT_INTERNAL_BASE 1000000000
@@ -44,6 +45,13 @@ class Huge
 
     // assert itself, i.e. if any of methods are called *this has to be not empty
     void AssertThis() const;
+
+    // for multiplying
+    void ChunkShiftLeft();
+
+    void ChunkShiftRight();
+
+    Huge Karatsuba(const Huge& a, const Huge& b);
 
 public:
     // rule of 3
@@ -79,12 +87,19 @@ public:
     // get chunk at index
     UIntInternal GetAt(size_t i) const;
 
-    // set chunk at index
+    // set chunk at index, not safe function
     void SetAt(size_t i, UIntInternal value);
 
     size_t GetLen() const { return mLen; }
 
+    // math
     void Subtract(const Huge &huge);
+
+    void Add(const Huge &huge);
+
+    void Multiply(const Huge& huge);
+
+    friend int main();
 };
 
 #endif // HUGE_H

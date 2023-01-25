@@ -117,7 +117,17 @@ int main()
     scanf("%s", buf);
     Huge b = NumConverter::ParseStr(buf);
 
-    a.Subtract(b);
+    a.ChunkShiftLeft();
 
+    a.Print();
+    printf("\n");
+    NumConverter::PrintHuge(a);
+
+    printf("\n");
+    printf("\n");
+    a.ChunkShiftRight();
+
+    a.Print();
+    printf("\n");
     NumConverter::PrintHuge(a);
 }
