@@ -3,6 +3,7 @@ HugeView::HugeView(const Huge *huge, size_t begin, intmax_t end) : mHuge{huge}, 
 {
     assert(static_cast<intmax_t>(begin) <= end || end == -1);
     mEnd = end == -1 ? huge->GetLen() - 1 : end;
+    assert(huge->GetLen() > mEnd);
 }
 
 UIntInternal HugeView::GetAt(size_t index)

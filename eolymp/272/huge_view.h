@@ -4,7 +4,7 @@
 #include "huge.h"
 
 // forward declare Huge to work
-
+class Huge;
 // HugeView is class that doesn't allocate anything, but can split up mChunks into small chunks
 class HugeView
 {

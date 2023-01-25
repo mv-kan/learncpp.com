@@ -35,6 +35,8 @@ using UIntInternal = std::uint64_t;
 // Base here means what is the max value we can store in one chunk
 constexpr UIntInternal hugeBase{UINT_INTERNAL_BASE};
 
+class HugeView;
+
 class Huge
 {
     std::size_t mLen{0};
@@ -51,7 +53,7 @@ class Huge
 
     void ChunkShiftRight();
 
-    Huge Karatsuba(const Huge& a, const Huge& b);
+    static Huge Karatsuba(const HugeView &a, const HugeView &b);
 
 public:
     // rule of 3
