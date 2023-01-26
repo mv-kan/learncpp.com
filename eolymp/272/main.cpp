@@ -1,7 +1,6 @@
 #include <cstring>
 #include <stdio.h>
 #include "huge.h"
-#include "huge_view.h"
 
 #define HUGE_CAPACITY 5000
 #define MAX_CHAR_INPUT 15000

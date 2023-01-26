@@ -27,7 +27,7 @@ function = PascalCase
 #include <string.h>
 #include <stddef.h>
 // base of each UIntInternal chunk
-#define UINT_INTERNAL_BASE 1000000000 // UINT_INTERNAL_BASE * UINT_INTERNAL_BASE mustn't overflow 64 bits
+#define UINT_INTERNAL_BASE 100000000 // UINT_INTERNAL_BASE * UINT_INTERNAL_BASE mustn't overflow 64 bits
 // #define UINT_INTERNAL_BASE 10
 
 using UIntInternal = std::uint64_t;
@@ -36,8 +36,6 @@ using UIntInternal = std::uint64_t;
 // base of Huge class
 // Base here means what is the max value we can store in one chunk
 constexpr UIntInternal hugeBase{UINT_INTERNAL_BASE};
-
-// class HugeView;
 
 class Huge
 {
@@ -112,6 +110,7 @@ public:
 
 #endif // HUGE_H
 
+#include "huge.h"
 #include <stdio.h>
 #include <limits>
 #include <utility>
@@ -390,50 +389,6 @@ void Huge::ChunkShiftRight()
     if (mLen > 1)
         mLen--;
 }
-
-// void Huge::KaratsubaMultiply(Huge *ptr, const HugeView &a, const HugeView &b)
-// {
-//     size_t alen{a.GetLen()};
-//     size_t blen{b.GetLen()};
-//     if (blen == 1 && alen == 1)
-//     {
-//         // basic multiplication case
-//         ptr->Set(a.GetAt(a.GetBegin()) * b.GetAt(b.GetBegin()));
-//         return;
-//     }
-
-//     // calculate middle point of number
-//     // middle point based on biggest len
-//     size_t m{alen > blen ? (alen + 1) / 2 : (blen + 1) / 2};
-
-//     HugeView alow{}, ahigh{}, blow{}, bhigh{};
-
-//     // split a and b num into highs and lows at @m point
-//     a.SplitAt(&alow, &ahigh, m);
-//     b.SplitAt(&blow, &bhigh, m);
-
-//     // calculate z
-//     Huge z0{0, (ptr->mCapacity + 1) / 2};
-//     Huge z1{0, (ptr->mCapacity + 1) / 2};
-//     Huge z2{0, (ptr->mCapacity + 1) / 2};
-
-//     // KaratsubaMultiply(z0, alow, blow);
-//     // // implement plust for HugeView
-//     // KaratsubaMultiply(z1, alow + ahigh, blow + bhigh);
-//     // KaratsubaMultiply(z2, ahigh, bhigh);
-
-//     // z1.Subtract(z0);
-//     // z1.Subtract(z2);
-
-//     // for (size_t i = 0; i < m; i++)
-//     // {
-//     //     z1.ChunkShiftLeft();
-//     //     z2.ChunkShiftLeft();
-//     //     z2.ChunkShiftLeft();
-//     // }
-//     // // implement plus
-//     // return z2 + z1 + z0;
-// }
 
 void Huge::Reduce()
 {

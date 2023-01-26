@@ -25,7 +25,7 @@ function = PascalCase
 #include <string.h>
 #include <stddef.h>
 // base of each UIntInternal chunk
-#define UINT_INTERNAL_BASE 1000000000 // UINT_INTERNAL_BASE * UINT_INTERNAL_BASE mustn't overflow 64 bits
+#define UINT_INTERNAL_BASE 100000000 // UINT_INTERNAL_BASE * UINT_INTERNAL_BASE mustn't overflow 64 bits
 // #define UINT_INTERNAL_BASE 10
 
 using UIntInternal = std::uint64_t;
