@@ -54,7 +54,7 @@ class Huge
     void ChunkShiftRight();
 
     // recursion multiply
-    static void KaratsubaMultiply(Huge* ptr, const HugeView &a, const HugeView &b);
+    // static void KaratsubaMultiply(Huge* ptr, const HugeView &a, const HugeView &b);
 
     void Set(size_t value);
 
