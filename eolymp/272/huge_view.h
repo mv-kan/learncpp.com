@@ -13,20 +13,20 @@ private:
     // begin is index of mChunks
     size_t mBegin = 0;
     size_t mEnd = 0;
-    void AssertThis();
+    void AssertThis() const;
 public:
     HugeView() = default;
 
     // if end equal to 0 , if end == -1 then end is equal to huge->GetLen()
     HugeView(const Huge* huge, size_t begin = 0, intmax_t end = -1);
     // get mChunk value
-    UIntInternal GetAt(size_t index);
+    UIntInternal GetAt(size_t index) const;
 
-    size_t GetBegin() { return mBegin; }
+    size_t GetBegin() const { return mBegin; }
     // this is index, not size!!!
-    size_t GetEnd() { return mEnd; }
+    size_t GetEnd() const { return mEnd; }
 
-    size_t GetLen() {return mEnd - mBegin + 1;}
+    size_t GetLen() const {return mEnd - mBegin + 1;}
     // @at this is parameter that calculates from begin like begin + at, at this point we split
     // so this is not absolute value, this is relative begin 
     void SplitAt(HugeView*a, HugeView*b, size_t at) const;

@@ -1,6 +1,6 @@
 #include "huge_view.h"
 
-void HugeView::AssertThis(){
+void HugeView::AssertThis() const{
     assert(mHuge != nullptr);
 }
 
@@ -11,7 +11,7 @@ HugeView::HugeView(const Huge *huge, size_t begin, intmax_t end) : mHuge{huge}, 
     assert(huge->GetLen() > mEnd);
 }
 
-UIntInternal HugeView::GetAt(size_t index)
+UIntInternal HugeView::GetAt(size_t index) const
 {
     AssertThis();
     // this is not proper error handling but for eolymp task it is good enough

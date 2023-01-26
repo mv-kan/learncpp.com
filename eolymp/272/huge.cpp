@@ -1,6 +1,9 @@
 #include "huge.h"
 #include <stdio.h>
 #include <limits>
+#include <utility>
+#include "huge_view.h"
+
 // I cannot see where it was raised, but debugger will save the day
 void Huge::AssertThis() const
 {
@@ -104,7 +107,8 @@ Huge::Huge(Huge &&source)
 Huge &Huge::operator=(Huge &&source)
 {
     assert(source.mCapacity > 0);
-
+    if (mChunks)
+        delete[] mChunks;
     mChunks = source.mChunks;
     mLen = source.mLen;
     mCapacity = source.mCapacity;
@@ -275,11 +279,6 @@ void Huge::ChunkShiftRight()
         mLen--;
 }
 
-void Huge::Multiply(const Huge &huge)
-{
-    huge.Print();
-}
-
 void Huge::KaratsubaMultiply(Huge *ptr, const HugeView &a, const HugeView &b)
 {
     size_t alen{a.GetLen()};
@@ -295,7 +294,7 @@ void Huge::KaratsubaMultiply(Huge *ptr, const HugeView &a, const HugeView &b)
     // middle point based on biggest len
     size_t m{alen > blen ? (alen + 1) / 2 : (blen + 1) / 2};
 
-    HugeView alow, ahigh, blow, bhigh;
+    HugeView alow{}, ahigh{}, blow{}, bhigh{};
 
     // split a and b num into highs and lows at @m point
     a.SplitAt(&alow, &ahigh, m);
@@ -306,20 +305,76 @@ void Huge::KaratsubaMultiply(Huge *ptr, const HugeView &a, const HugeView &b)
     Huge z1{0, (ptr->mCapacity + 1) / 2};
     Huge z2{0, (ptr->mCapacity + 1) / 2};
 
-    KaratsubaMultiply(z0, alow, blow);
-    // implement plust for HugeView
-    KaratsubaMultiply(z1, alow + ahigh, blow + bhigh);
-    KaratsubaMultiply(z2, ahigh, bhigh);
+    // KaratsubaMultiply(z0, alow, blow);
+    // // implement plust for HugeView
+    // KaratsubaMultiply(z1, alow + ahigh, blow + bhigh);
+    // KaratsubaMultiply(z2, ahigh, bhigh);
 
-    z1.Subtract(z0);
-    z1.Subtract(z2);
+    // z1.Subtract(z0);
+    // z1.Subtract(z2);
 
-    for (size_t i = 0; i < m; i++)
+    // for (size_t i = 0; i < m; i++)
+    // {
+    //     z1.ChunkShiftLeft();
+    //     z2.ChunkShiftLeft();
+    //     z2.ChunkShiftLeft();
+    // }
+    // // implement plus
+    // return z2 + z1 + z0;
+}
+
+void Huge::Reduce() {
+    for (size_t i = 0; i < mLen; i++)
     {
-        z1.ChunkShiftLeft();
-        z2.ChunkShiftLeft();
-        z2.ChunkShiftLeft();
+        size_t irev{ mLen - i - 1 };
+        if (mChunks[irev] != 0) {
+            mLen = irev + 1;
+            return;
+        }
     }
+    // for 0 len is 1
+    mLen = 1;
+}
 
-    return z2 + z1 + z0;
+void Huge::Multiply(const Huge &huge)
+{
+    /*
+    1234 a [3..0]
+     567 b [2..0]
+    // r is num digit for result with remainder
+    r[0] = a[0] * b[0]
+    r[1] = a[0] * b[1] + b[0] * a[1]
+    r[2] = a[0] * b[2] + a[1] * b[1] + a[2] * b[0]
+    r[3] = a[0] * b[3] + a[1] * b[2] + a[2] * b[1] + a[3] * b[0]
+    r[4] = a[0] * b[4] + a[1] * b[3] + a[2] * b[2] + a[3] * b[1] + a[4] * b[0]
+    */
+    Huge result{0, mCapacity};
+    // each time we increment mLen of result, so to avoid 
+    // creating logic for first mLen increment I just decrement mLen before the loop
+    result.mLen--;
+
+    size_t i{};
+    // remainder 
+    UIntInternal r{};
+    do
+    {
+        for (size_t j = 0; j <= i; j++) {
+            // this means that j is out of bounds of mChunks
+            // and out of bound value is zero in this context 
+            // and if we multiply zero on anything we get zero, so we can skip this iteration if we got one
+            if (j >= mLen)
+                continue;
+            if (i - j >= huge.mLen)
+                continue;
+
+            r += mChunks[j] * huge.mChunks[i - j];
+        }
+        result.mChunks[i] = r % hugeBase;
+        result.mLen++;
+        r = r / hugeBase;
+        i++;
+    } while (i < mLen * 2 || i < huge.mLen * 2);
+
+    result.Reduce();
+    *this = std::move(result);
 }

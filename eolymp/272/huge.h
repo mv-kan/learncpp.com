@@ -25,8 +25,8 @@ function = PascalCase
 #include <string.h>
 #include <stddef.h>
 // base of each UIntInternal chunk
-// #define UINT_INTERNAL_BASE 1000000000 // UINT_INTERNAL_BASE * UINT_INTERNAL_BASE mustn't overflow 64 bits
-#define UINT_INTERNAL_BASE 10
+#define UINT_INTERNAL_BASE 1000000000 // UINT_INTERNAL_BASE * UINT_INTERNAL_BASE mustn't overflow 64 bits
+// #define UINT_INTERNAL_BASE 10
 
 using UIntInternal = std::uint64_t;
 
@@ -35,7 +35,7 @@ using UIntInternal = std::uint64_t;
 // Base here means what is the max value we can store in one chunk
 constexpr UIntInternal hugeBase{UINT_INTERNAL_BASE};
 
-class HugeView;
+// class HugeView;
 
 class Huge
 {
@@ -57,6 +57,9 @@ class Huge
     static void KaratsubaMultiply(Huge* ptr, const HugeView &a, const HugeView &b);
 
     void Set(size_t value);
+
+    // set mLen where it suppose to be
+    void Reduce();
 
 public:
     // rule of 3

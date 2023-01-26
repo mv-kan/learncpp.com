@@ -118,13 +118,15 @@ int main()
     scanf("%s", buf);
     Huge b = NumConverter::ParseStr(buf);
 
-    HugeView av{&a, 0, 1};
 
-    for (size_t i = av.GetBegin(); i < av.GetEnd() + 1; i++)
-    {
-        printf(" %zu ", av.GetAt(i));
-    }
-    printf("\n");
+    a.Multiply(b);
+    // HugeView av{&a, 0, 1};
 
-    //NumConverter::PrintHuge(a);
+    // for (size_t i = av.GetBegin(); i < av.GetEnd() + 1; i++)
+    // {
+    //     printf(" %zu ", av.GetAt(i));
+    // }
+    // printf("\n");
+    // a.Print();
+    NumConverter::PrintHuge(a);
 }
