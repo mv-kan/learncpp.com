@@ -35,8 +35,6 @@ using UIntInternal = std::uint64_t;
 // Base here means what is the max value we can store in one chunk
 constexpr UIntInternal hugeBase{UINT_INTERNAL_BASE};
 
-// class HugeView;
-
 class Huge
 {
     std::size_t mLen{0};

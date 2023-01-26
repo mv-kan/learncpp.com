@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <limits>
 #include <utility>
-#include "huge_view.h"
-
 // I cannot see where it was raised, but debugger will save the day
 void Huge::AssertThis() const
 {
@@ -278,50 +276,6 @@ void Huge::ChunkShiftRight()
     if (mLen > 1)
         mLen--;
 }
-
-// void Huge::KaratsubaMultiply(Huge *ptr, const HugeView &a, const HugeView &b)
-// {
-//     size_t alen{a.GetLen()};
-//     size_t blen{b.GetLen()};
-//     if (blen == 1 && alen == 1)
-//     {
-//         // basic multiplication case
-//         ptr->Set(a.GetAt(a.GetBegin()) * b.GetAt(b.GetBegin()));
-//         return;
-//     }
-
-//     // calculate middle point of number
-//     // middle point based on biggest len
-//     size_t m{alen > blen ? (alen + 1) / 2 : (blen + 1) / 2};
-
-//     HugeView alow{}, ahigh{}, blow{}, bhigh{};
-
-//     // split a and b num into highs and lows at @m point
-//     a.SplitAt(&alow, &ahigh, m);
-//     b.SplitAt(&blow, &bhigh, m);
-
-//     // calculate z
-//     Huge z0{0, (ptr->mCapacity + 1) / 2};
-//     Huge z1{0, (ptr->mCapacity + 1) / 2};
-//     Huge z2{0, (ptr->mCapacity + 1) / 2};
-
-//     // KaratsubaMultiply(z0, alow, blow);
-//     // // implement plust for HugeView
-//     // KaratsubaMultiply(z1, alow + ahigh, blow + bhigh);
-//     // KaratsubaMultiply(z2, ahigh, bhigh);
-
-//     // z1.Subtract(z0);
-//     // z1.Subtract(z2);
-
-//     // for (size_t i = 0; i < m; i++)
-//     // {
-//     //     z1.ChunkShiftLeft();
-//     //     z2.ChunkShiftLeft();
-//     //     z2.ChunkShiftLeft();
-//     // }
-//     // // implement plus
-//     // return z2 + z1 + z0;
-// }
 
 void Huge::Reduce() {
     for (size_t i = 0; i < mLen; i++)
