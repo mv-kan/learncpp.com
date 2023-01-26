@@ -110,7 +110,6 @@ public:
 
 #endif // HUGE_H
 
-#include "huge.h"
 #include <stdio.h>
 #include <limits>
 #include <utility>
@@ -450,7 +449,7 @@ void Huge::Multiply(const Huge &huge)
 }
 
 #define HUGE_CAPACITY 5000
-#define MAX_CHAR_INPUT 15000
+#define MAX_CHAR_INPUT 30000
 
 class NumConverter
 {
@@ -565,13 +564,6 @@ int main()
     Huge b = NumConverter::ParseStr(buf);
 
     a.Multiply(b);
-    // HugeView av{&a, 0, 1};
-
-    // for (size_t i = av.GetBegin(); i < av.GetEnd() + 1; i++)
-    // {
-    //     printf(" %zu ", av.GetAt(i));
-    // }
-    // printf("\n");
-    // a.Print();
+ 
     NumConverter::PrintHuge(a);
 }

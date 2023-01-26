@@ -3,7 +3,7 @@
 #include "huge.h"
 
 #define HUGE_CAPACITY 5000
-#define MAX_CHAR_INPUT 15000
+#define MAX_CHAR_INPUT 30000
 
 class NumConverter
 {
