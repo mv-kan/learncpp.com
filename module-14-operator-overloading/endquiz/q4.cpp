@@ -2,7 +2,8 @@
 
 class FixedPoint2
 {
-    void parseTwoInt(int16_t base, int16_t decimal) {
+    void parseTwoInt(int16_t base, int16_t decimal)
+    {
         mBase = base;
         mDecimal = decimal;
         if (mBase < 0 || mDecimal < 0)
@@ -11,6 +12,7 @@ class FixedPoint2
             mDecimal = static_cast<int16_t>(std::abs(mDecimal));
         }
     }
+
 public:
     FixedPoint2(int16_t base, int16_t decimal) : mBase{base}, mDecimal{decimal}
     {
@@ -21,18 +23,19 @@ public:
         }
     }
 
-    FixedPoint2(double num) 
+    FixedPoint2(double num)
     {
         int16_t base = static_cast<int16_t>(num);
-        int16_t  decimal = static_cast<int16_t>(num * 100) % 100;
+        int16_t decimal = static_cast<int16_t>(num * 100) % 100;
         parseTwoInt(base, decimal);
     }
 
     operator double() const
     {
         double result{std::abs((double)mBase) + static_cast<double>(mDecimal) / 100};
-        return mBase < 0? -result: result;
+        return mBase < 0 ? -result : result;
     }
+
 private:
     int16_t mBase{};
     int16_t mDecimal{};
