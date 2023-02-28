@@ -3,18 +3,19 @@
 using namespace std;
 
 class A {
+    public: 
+    int a = 10;
 };
 
 class B: private A {
+    public:
+    int a = 20;
 
 };
 
 int main() {
-    // B obj;
-    // A& rObj = obj;
+    B obj;
+    A& rObj = obj;
 
-    // cout << rObj.a;
-
-    A* a = new B();
-    delete a;
+    cout << rObj.a;
 }
